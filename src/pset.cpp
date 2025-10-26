@@ -198,12 +198,11 @@ void Pset::sample_points_cgal(double param, int method) {
     } else if (method == 1) {
         double cell_size = param;
         points.erase(
-                CGAL::grid_simplify_point_set(
-                        points.begin(),
-                        points.end(),
-                        cell_size),
+        CGAL::grid_simplify_point_set(
+            points,
+            cell_size),
 
-                points.end());
+        points.end());
 
         // Optional: after erase(), use Scott Meyer's "swap trick" to trim excess capacity
         std::vector<Point>(points).swap(points);
@@ -211,7 +210,7 @@ void Pset::sample_points_cgal(double param, int method) {
 }
 
 void Pset::smooth_pset(unsigned int k) {
-    CGAL::jet_smooth_point_set<Concurrency_tag>(points.begin(), points.end(), k);
+    CGAL::jet_smooth_point_set<Concurrency_tag>(points, k);
 }
 
 void Pset::translade_points_mean() {

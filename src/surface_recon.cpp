@@ -1,5 +1,5 @@
 #include "map_builder/surface_recon.hpp"
-#include "map_builder/happly.h"
+#include <cstring>
 
 static rclcpp::Logger LOGGER = rclcpp::get_logger("map_builder");
 
@@ -457,22 +457,44 @@ void write_ply_binary_wnormals(std::string out_file, std::list<PointVectorPair> 
         nz.push_back(n3d[2]);
     }
 
-    // Create an empty object
-    happly::PLYData plyOut;
+    // Write a minimal binary little-endian PLY file with vertex positions and normals
+    FILE *f = fopen(out_file.c_str(), "wb");
+    if (!f) {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to open PLY file for writing: " << out_file);
+        return;
+    }
 
-    // Add elements
-    plyOut.addElement("vertex", num_points_out);
+    // Header for binary little endian PLY
+    std::string header = std::string("ply\n") +
+                         "format binary_little_endian 1.0\n" +
+                         "element vertex " + std::to_string(num_points_out) + "\n" +
+                         "property float x\n" +
+                         "property float y\n" +
+                         "property float z\n" +
+                         "property float nx\n" +
+                         "property float ny\n" +
+                         "property float nz\n" +
+                         "end_header\n";
 
-    // Add properties to those elements
-    plyOut.getElement("vertex").addProperty<float>("x", x);
-    plyOut.getElement("vertex").addProperty<float>("y", y);
-    plyOut.getElement("vertex").addProperty<float>("z", z);
-    plyOut.getElement("vertex").addProperty<float>("nx", nx);
-    plyOut.getElement("vertex").addProperty<float>("ny", ny);
-    plyOut.getElement("vertex").addProperty<float>("nz", nz);
+    fwrite(header.c_str(), 1, header.size(), f);
 
-    // Write the object to file
-    plyOut.write(out_file, happly::DataFormat::Binary);
+    // Write binary floats for each vertex: x,y,z,nx,ny,nz (little-endian assumed)
+    for (size_t i = 0; i < x.size(); ++i) {
+        float vx = x[i];
+        float vy = y[i];
+        float vz = z[i];
+        float vnx = nx[i];
+        float vny = ny[i];
+        float vnz = nz[i];
+        fwrite(&vx, sizeof(float), 1, f);
+        fwrite(&vy, sizeof(float), 1, f);
+        fwrite(&vz, sizeof(float), 1, f);
+        fwrite(&vnx, sizeof(float), 1, f);
+        fwrite(&vny, sizeof(float), 1, f);
+        fwrite(&vnz, sizeof(float), 1, f);
+    }
+
+    fclose(f);
 }
 
 void trim_mesh(Mesh m, Tree &tree, double threshold, std::string base_path) {
