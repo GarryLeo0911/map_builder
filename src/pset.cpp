@@ -11,7 +11,7 @@ static rclcpp::Logger LOGGER_PSET = rclcpp::get_logger("map_builder::pset");
 
 // Init and test if input file contains the right properties
 
-void Pset::read_pointCloud2(const sensor_msgs::PointCloud2 msg) {
+void Pset::read_pointCloud2(const sensor_msgs::msg::PointCloud2 & msg) {
 
     //set random engine
     std::random_device rd;  //Will be used to obtain a seed for the random number engine

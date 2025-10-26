@@ -13,7 +13,7 @@
 #include <CGAL/grid_simplify_point_set.h>
 #include <CGAL/jet_smooth_point_set.h>
 #include <CGAL/config.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <utility>
 #include <vector>
@@ -57,7 +57,7 @@ public:
         has_normals = false;
     }
 
-    void read_pointCloud2(const sensor_msgs::PointCloud2 msg);
+    void read_pointCloud2(const sensor_msgs::msg::PointCloud2 & msg);
 
     void read_ply(std::string path);
 
