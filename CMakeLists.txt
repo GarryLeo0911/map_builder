@@ -56,7 +56,8 @@ if ( NOT SKIP_RECON )
     src/texture.cpp
   )
   ament_target_dependencies(map_builder_service rclcpp sensor_msgs geometry_msgs visualization_msgs std_msgs pcl_conversions)
-  add_dependencies(map_builder_service ${${PROJECT_NAME}_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_interfaces_cpp)
+  # Link generated ROS interfaces to the C++ target so generated headers are available
+  rosidl_target_interfaces(map_builder_service ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
   add_executable(p_normal_service
     src/p_normal_service_from_pointcloud.cpp
@@ -68,7 +69,8 @@ if ( NOT SKIP_RECON )
     src/texture.cpp
   )
   ament_target_dependencies(p_normal_service rclcpp sensor_msgs geometry_msgs visualization_msgs std_msgs pcl_conversions)
-  add_dependencies(p_normal_service ${${PROJECT_NAME}_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_interfaces_cpp)
+  # Link generated ROS interfaces to the C++ target so generated headers are available
+  rosidl_target_interfaces(p_normal_service ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
   install(TARGETS
     map_builder_service
