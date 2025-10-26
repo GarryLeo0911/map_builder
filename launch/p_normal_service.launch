@@ -1,0 +1,5 @@
+<launch>
+	<env name="ROSCONSOLE_CONFIG_FILE" value="$(find map_builder)/config/general.config"/>
+	<rosparam file="$(find map_builder)/config/basic_recon_v4_ufmg.yaml" command="load" ns="" subst_value="true"/>
+	<node name="p_normal_node" pkg="map_builder" type="p_normal_service" respawn="false" output="screen"/>
+</launch>
