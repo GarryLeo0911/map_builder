@@ -37,7 +37,7 @@ using NormalsSrv = map_builder::srv::NormalsFromPointCloud2;
 double gridm = 0.0;
 double holemaxsize = 0.0;
 std::string output_folder = "";
-double sample = 0.0;
+double sample_ratio = 0.0;
 double trim = 0.0;
 int texturesize = 0;
 
@@ -57,7 +57,7 @@ std::string generate_point_cloud_normals(const sensor_msgs::msg::PointCloud2 & m
     auto start_total_time = chrono::high_resolution_clock::now();
 
     auto start = chrono::high_resolution_clock::now();
-    Pset pointset(points, normals, colors, sample); // init my point cloud
+    Pset pointset(points, normals, colors, sample_ratio); // init my point cloud
     pointset.read_pointCloud2(msg);
 
     for (size_t i = 0; i < points.size(); i++) //initialize structure for Kdtree
@@ -85,7 +85,7 @@ std::string generate_point_cloud_normals(const sensor_msgs::msg::PointCloud2 & m
                             << " seconds");
 
     start = chrono::high_resolution_clock::now();
-    average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(orig_points.begin(), orig_points.end(), 6);
+    average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(orig_points, 6);
     stop = chrono::high_resolution_clock::now();
     RCLCPP_INFO_STREAM(LOGGER, "Time to compute_average_spacing: "
                             << float(chrono::duration_cast<chrono::microseconds>(stop - start).count() / 1000000.0)
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
     node->declare_parameter<double>("gridm", gridm);
     node->declare_parameter<double>("holemaxsize", holemaxsize);
     node->declare_parameter<std::string>("output_folder", output_folder);
-    node->declare_parameter<double>("sample", sample);
+    node->declare_parameter<double>("sample", sample_ratio);
     node->declare_parameter<double>("trim", trim);
     node->declare_parameter<int>("texturesize", texturesize);
 

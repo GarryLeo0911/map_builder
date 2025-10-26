@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     pointset.write_ply(output + "_full_pcd_rgb.ply"); //write full rgb .ply
 
-    average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(orig_points.begin(), orig_points.end(), 6);
+    average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(orig_points, 6);
 
     double as_ratio = grid_multiplier * log(points.size() / 10e4);//(points.size()/1200000.0)*3.0;
 

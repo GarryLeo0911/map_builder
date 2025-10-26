@@ -36,7 +36,7 @@ using MeshSrv = map_builder::srv::MeshFromPointCloud2;
 double gridm = 0.0;
 double holemaxsize = 0.0;
 std::string output_folder = "";
-double sample = 0.0;
+double sample_ratio = 0.0;
 double trim = 0.0;
 int texturesize = 0;
 int remove_borders_iterations = 0;
@@ -52,7 +52,13 @@ void publishSTLMarker(rclcpp::Publisher<visualization_msgs::msg::Marker>::Shared
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = frame_id;
     rclcpp::Clock clock(RCL_ROS_TIME);
-    marker.header.stamp = clock.now().to_msg();
+    {
+        // Convert rclcpp::Time to builtin_interfaces::msg::Time (avoid to_msg() which may not be available)
+        rclcpp::Time now = clock.now();
+        uint64_t ns = now.nanoseconds();
+        marker.header.stamp.sec = static_cast<int32_t>(ns / 1000000000ULL);
+        marker.header.stamp.nanosec = static_cast<uint32_t>(ns % 1000000000ULL);
+    }
 
     marker.ns = "basic_shapes";
     marker.id = 0;
@@ -77,7 +83,9 @@ void publishSTLMarker(rclcpp::Publisher<visualization_msgs::msg::Marker>::Shared
     marker.color.b = 0.0f;
     marker.color.a = 0.5;
 
-    marker.lifetime = rclcpp::Duration(0,0).to_msg();
+    // zero duration
+    marker.lifetime.sec = 0;
+    marker.lifetime.nanosec = 0u;
     marker.mesh_use_embedded_materials = true;
 
     if (marker_pub) marker_pub->publish(marker);
@@ -187,7 +195,7 @@ std::string generate_mesh(const sensor_msgs::msg::PointCloud2 & msg, const geome
     auto start_total_time = chrono::high_resolution_clock::now();
 
     auto start = chrono::high_resolution_clock::now();
-    Pset pointset(points, normals, colors, sample); // init my point cloud
+    Pset pointset(points, normals, colors, sample_ratio); // init my point cloud
     pointset.read_pointCloud2(msg);
 
     for (size_t i = 0; i < points.size(); i++) //initialize structure for Kdtree
@@ -215,7 +223,7 @@ std::string generate_mesh(const sensor_msgs::msg::PointCloud2 & msg, const geome
                             << " seconds");
 
     start = chrono::high_resolution_clock::now();
-    average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(orig_points.begin(), orig_points.end(), 6);
+    average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(orig_points, 6);
     stop = chrono::high_resolution_clock::now();
     RCLCPP_INFO_STREAM(LOGGER, "Time to compute_average_spacing: "
                             << float(chrono::duration_cast<chrono::microseconds>(stop - start).count() / 1000000.0)
@@ -389,7 +397,7 @@ int main(int argc, char *argv[])
     node->declare_parameter<double>("gridm", gridm);
     node->declare_parameter<double>("holemaxsize", holemaxsize);
     node->declare_parameter<std::string>("output_folder", output_folder);
-    node->declare_parameter<double>("sample", sample);
+    node->declare_parameter<double>("sample", sample_ratio);
     node->declare_parameter<double>("trim", trim);
     node->declare_parameter<int>("texturesize", texturesize);
     node->declare_parameter<int>("remove_borders_iterations", remove_borders_iterations);

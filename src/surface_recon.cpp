@@ -318,8 +318,7 @@ Mesh reconstruct_surface(std::list<PointVectorPair> &pwn, std::string base_path,
 
     RCLCPP_DEBUG_STREAM(LOGGER, "Implicit function computed...");
 
-    FT average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points.begin(), points.end(),
-                                                                             6 /* knn = 1 ring */);
+    FT average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>(points, 6 /* knn = 1 ring */);
     // Gets one point inside the implicit surface
     // and computes implicit function bounding sphere radius.
     Point inner_point = function.get_inner_point();
