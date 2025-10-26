@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
 project(map_builder)
 
+# Suppress developer warning about CMP0144 (PCL/FLANN) by setting the
+# policy to NEW so find_package honors PACKAGENAME_ROOT variables safely.
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
