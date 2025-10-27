@@ -5,10 +5,32 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
-import cv2
-import depthai as dai
-import numpy as np
-from cv_bridge import CvBridge
+
+# Optional imports - will gracefully handle missing dependencies
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    
+try:
+    import depthai as dai
+    DEPTHAI_AVAILABLE = True
+except ImportError:
+    DEPTHAI_AVAILABLE = False
+    
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    
+try:
+    from cv_bridge import CvBridge
+    CV_BRIDGE_AVAILABLE = True
+except ImportError:
+    CV_BRIDGE_AVAILABLE = False
+
 import sensor_msgs_py.point_cloud2 as pc2
 from builtin_interfaces.msg import Time
 import time
@@ -17,6 +39,16 @@ import time
 class OAKDNode(Node):
     def __init__(self):
         super().__init__('oakd_node')
+        
+        # Check for required dependencies
+        if not all([CV2_AVAILABLE, DEPTHAI_AVAILABLE, NUMPY_AVAILABLE, CV_BRIDGE_AVAILABLE]):
+            self.get_logger().error(
+                f"Missing dependencies: "
+                f"cv2={CV2_AVAILABLE}, depthai={DEPTHAI_AVAILABLE}, "
+                f"numpy={NUMPY_AVAILABLE}, cv_bridge={CV_BRIDGE_AVAILABLE}"
+            )
+            self.get_logger().error("Install missing dependencies: pip3 install opencv-python depthai numpy")
+            return
         
         # Declare parameters
         self.declare_parameter('fps', 30)

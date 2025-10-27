@@ -5,7 +5,13 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped
 import sensor_msgs_py.point_cloud2 as pc2
-import numpy as np
+
+# Optional numpy import
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
 
 
 class OAKDPublisher(Node):
@@ -16,6 +22,9 @@ class OAKDPublisher(Node):
     
     def __init__(self):
         super().__init__('oakd_publisher')
+        
+        if not NUMPY_AVAILABLE:
+            self.get_logger().warn("NumPy not available, using simplified test data")
         
         # Publishers
         self.pointcloud_pub = self.create_publisher(PointCloud2, 'oakd/points', 10)
@@ -33,11 +42,20 @@ class OAKDPublisher(Node):
             # Generate a simple test point cloud (a grid of points)
             points = []
             
-            # Create a simple 3D grid pattern
-            for x in np.linspace(-2, 2, 20):
-                for y in np.linspace(-2, 2, 20):
-                    z = 2.0 + 0.5 * np.sin(x + self.frame_count * 0.1) * np.cos(y + self.frame_count * 0.1)
-                    points.append([float(x), float(y), float(z)])
+            if NUMPY_AVAILABLE:
+                # Create a simple 3D grid pattern with numpy
+                for x in np.linspace(-2, 2, 20):
+                    for y in np.linspace(-2, 2, 20):
+                        z = 2.0 + 0.5 * np.sin(x + self.frame_count * 0.1) * np.cos(y + self.frame_count * 0.1)
+                        points.append([float(x), float(y), float(z)])
+            else:
+                # Simple fallback without numpy
+                for i in range(-10, 11):
+                    for j in range(-10, 11):
+                        x = i * 0.2  # -2 to 2
+                        y = j * 0.2  # -2 to 2
+                        z = 2.0 + 0.5 * (self.frame_count * 0.01) % 1.0  # Simple animation
+                        points.append([float(x), float(y), float(z)])
             
             # Create PointCloud2 message
             header = self.create_header()
