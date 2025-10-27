@@ -9,6 +9,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
 from ament_index_python.packages import get_package_share_directory
@@ -28,13 +29,24 @@ def generate_launch_description():
         description='Use test publisher instead of real camera'
     )
     
-    # Camera node (real or test)
+    # Camera node (always use oakd_node by default, can be overridden by parameters)
     camera_node = Node(
         package='oakd_driver',
-        executable='oakd_publisher' if LaunchConfiguration('use_test_data') == 'true' else 'oakd_node',
+        executable='oakd_node',
         name='oakd_node',
         parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
-        output='screen'
+        output='screen',
+        condition=UnlessCondition(LaunchConfiguration('use_test_data'))
+    )
+    
+    # Test camera node (alternative for testing)
+    test_camera_node = Node(
+        package='oakd_driver',
+        executable='oakd_publisher',
+        name='oakd_test_node',
+        parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('use_test_data'))
     )
     
     # Map builder components
@@ -118,6 +130,7 @@ def generate_launch_description():
         use_sim_time_arg,
         use_test_data_arg,
         camera_node,
+        test_camera_node,
         point_cloud_processor,
         surface_reconstructor,
         map_builder_node,
