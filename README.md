@@ -1,306 +1,378 @@
-# OAK-D 3D Mapping System for ROS2 Jazzy
+# Map Builder for ROS2 Jazzy
 
-A comprehensive ROS2 Jazzy package for building 3D maps using the OAK-D camera from Luxonis. This system is designed to run on a robot (Raspberry Pi) with the camera, sending data to a laptop for visualization and processing.
-
-## System Architecture
-
-```
-┌─────────────────┐    Network     ┌─────────────────┐
-│   Raspberry Pi  │ ─────────────► │     Laptop      │
-│   (Robot Side)  │                │ (Visualization) │
-│                 │                │                 │
-│ • OAK-D Driver  │                │ • Map Builder   │
-│ • Point Cloud   │                │ • Surface Recon │
-│ • RGB/Depth     │                │ • RViz2         │
-└─────────────────┘                └─────────────────┘
-```
+A comprehensive ROS2 Jazzy package for building 3D maps from point cloud data. This package processes point clouds, performs surface reconstruction, and generates both 2D occupancy grids and 3D mesh representations for mapping and navigation.
 
 ## Features
 
-- **Real-time Point Cloud Processing**: Capture and process point clouds from OAK-D camera
-- **3D Surface Reconstruction**: Build mesh surfaces from point cloud data
-- **Occupancy Grid Mapping**: Generate 2D occupancy grids for navigation
-- **Distributed Processing**: Robot captures data, laptop processes and visualizes
-- **RViz2 Integration**: Comprehensive visualization of mapping process
-- **Configurable Parameters**: Tunable filtering, clustering, and mapping parameters
+- **Point Cloud Processing**: Advanced filtering, downsampling, and noise removal
+- **Surface Reconstruction**: 3D mesh generation from point cloud data
+- **Occupancy Grid Mapping**: 2D grid maps for navigation systems
+- **Real-time Visualization**: Markers and point clouds for RViz2
+- **Configurable Pipeline**: Adjustable parameters for different environments
+- **Multi-sensor Support**: Compatible with various point cloud sources
 
-## Hardware Requirements
+## Architecture
 
-### Robot Side (Raspberry Pi)
-- Raspberry Pi 4 (recommended) or compatible SBC
-- OAK-D camera from Luxonis
-- Sufficient power supply for both Pi and camera
-- Network connectivity (WiFi/Ethernet)
+The package consists of three main components:
 
-### Laptop Side
-- Ubuntu 22.04 with ROS2 Jazzy
-- Sufficient computing power for point cloud processing
-- GPU recommended for better performance
+1. **Point Cloud Processor**: Filters and preprocesses raw point cloud data
+2. **Surface Reconstructor**: Generates 3D surfaces and mesh data
+3. **Map Builder Node**: Coordinates mapping process and publishes results
 
-## Software Dependencies
+## Dependencies
 
 ### System Dependencies
 ```bash
-# ROS2 Jazzy (install following official ROS2 documentation)
-sudo apt update
+# ROS2 Jazzy
 sudo apt install ros-jazzy-desktop-full
 
 # Additional ROS2 packages
-sudo apt install ros-jazzy-cv-bridge ros-jazzy-image-transport
 sudo apt install ros-jazzy-tf2-ros ros-jazzy-tf2-geometry-msgs
-sudo apt install ros-jazzy-robot-state-publisher
-sudo apt install ros-jazzy-rviz2
+sudo apt install ros-jazzy-visualization-msgs ros-jazzy-nav-msgs
+sudo apt install ros-jazzy-sensor-msgs ros-jazzy-geometry-msgs
 ```
 
 ### Python Dependencies
 ```bash
-# Install pip packages
-pip install depthai opencv-python numpy scipy scikit-learn matplotlib
+# Core scientific libraries
+pip install numpy scipy scikit-learn
 
-# Optional: Open3D for advanced point cloud processing
+# Point cloud processing
 pip install open3d
+
+# Visualization
+pip install matplotlib
 ```
 
 ## Installation
 
-### 1. Clone and Build Workspace
-
+### 1. Clone Repository
 ```bash
 # Create workspace
-mkdir -p ~/oakd_ws/src
-cd ~/oakd_ws/src
+mkdir -p ~/mapping_ws
+cd ~/mapping_ws
 
-# Clone this repository
-git clone <your-repository-url> .
+# Clone this package
+git clone <repository-url> map_builder
 
-# Build workspace
-cd ~/oakd_ws
-colcon build --symlink-install
+# Build package
+colcon build --packages-select map_builder
 
 # Source workspace
 source install/setup.bash
 ```
 
-### 2. Install DepthAI (for OAK-D camera)
-
+### 2. Verify Installation
 ```bash
-# Install DepthAI
-python3 -m pip install depthai
+# Check nodes are available
+ros2 pkg executables map_builder
 
-# Test camera connection
-python3 -c "import depthai as dai; print('DepthAI version:', dai.__version__)"
+# Expected output:
+# map_builder map_builder_node
+# map_builder point_cloud_processor  
+# map_builder surface_reconstructor
 ```
-
-## Configuration
-
-### Network Setup
-
-For distributed operation, ensure both robot and laptop can communicate:
-
-1. **Same Network**: Connect both devices to the same WiFi network
-2. **ROS Domain ID**: Set the same ROS_DOMAIN_ID on both machines:
-   ```bash
-   export ROS_DOMAIN_ID=42
-   ```
-3. **Firewall**: Ensure ROS2 ports are open (typically UDP 7400-7500)
-
-### Parameter Configuration
-
-Edit configuration files in `src/*/config/` directories:
-
-- `oakd_params.yaml`: Camera parameters (resolution, FPS, etc.)
-- `map_builder_params.yaml`: Mapping parameters (resolution, filtering, etc.)
 
 ## Usage
 
-### Option 1: Distributed Operation (Recommended)
-
-#### Robot Side (Raspberry Pi):
+### Launch Complete Mapping Pipeline
 ```bash
-cd ~/oakd_ws
-source install/setup.bash
-ros2 launch robot_side.launch.py
-```
-
-#### Laptop Side:
-```bash
-cd ~/oakd_ws
-source install/setup.bash
-ros2 launch laptop_side.launch.py
-```
-
-### Option 2: Single Machine Testing
-```bash
-cd ~/oakd_ws
-source install/setup.bash
-
-# With real camera
-ros2 launch complete_system.launch.py
-
-# With test data (no camera needed)
-ros2 launch complete_system.launch.py use_test_data:=true
-```
-
-### Option 3: Individual Components
-
-#### Start OAK-D Driver:
-```bash
-ros2 launch oakd_driver oakd_driver.launch.py
-```
-
-#### Start Mapping Pipeline:
-```bash
+# Start all mapping components
 ros2 launch map_builder map_builder.launch.py
+
+# With custom parameters
+ros2 launch map_builder map_builder.launch.py voxel_size:=0.05 max_range:=10.0
 ```
 
-#### Start RViz2 Visualization:
+### Run Individual Components
+
+#### Point Cloud Processor
 ```bash
-ros2 run rviz2 rviz2 -d src/map_builder/rviz/map_builder.rviz
+ros2 run map_builder point_cloud_processor
 ```
 
-## Topics and Data Flow
+#### Surface Reconstructor  
+```bash
+ros2 run map_builder surface_reconstructor
+```
 
-### Published Topics
+#### Main Map Builder
+```bash
+ros2 run map_builder map_builder_node
+```
 
-#### OAK-D Driver (`oakd_driver`):
-- `/oakd/rgb/image_raw` (sensor_msgs/Image): RGB camera feed
-- `/oakd/depth/image_raw` (sensor_msgs/Image): Depth image
-- `/oakd/points` (sensor_msgs/PointCloud2): Raw point cloud
-- `/oakd/rgb/camera_info` (sensor_msgs/CameraInfo): Camera calibration
-- `/oakd/depth/camera_info` (sensor_msgs/CameraInfo): Depth camera info
+## Subscribed Topics
 
-#### Map Builder (`map_builder`):
-- `/map_builder/filtered_points` (sensor_msgs/PointCloud2): Filtered point cloud
-- `/map_builder/accumulated_points` (sensor_msgs/PointCloud2): Accumulated points
-- `/map_builder/occupancy_grid` (nav_msgs/OccupancyGrid): 2D occupancy map
-- `/map_builder/mesh_markers` (visualization_msgs/MarkerArray): 3D mesh surfaces
-- `/map_builder/surface_markers` (visualization_msgs/MarkerArray): Surface points
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/oakd/points` | `sensor_msgs/PointCloud2` | Input point cloud data |
+| `/robot_pose` | `geometry_msgs/PoseStamped` | Robot pose (optional) |
 
-### Subscribed Topics
+## Published Topics
 
-- `/oakd/points`: Point cloud input for mapping
-- `/robot_pose`: Robot pose for mapping (optional)
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/map_builder/filtered_points` | `sensor_msgs/PointCloud2` | Processed point cloud |
+| `/map_builder/accumulated_points` | `sensor_msgs/PointCloud2` | Historical point data |
+| `/map_builder/occupancy_grid` | `nav_msgs/OccupancyGrid` | 2D navigation map |
+| `/map_builder/mesh_markers` | `visualization_msgs/MarkerArray` | 3D mesh surfaces |
+| `/map_builder/surface_markers` | `visualization_msgs/MarkerArray` | Surface point clusters |
+
+## Configuration
+
+### Main Parameters (`config/map_builder_params.yaml`)
+
+```yaml
+point_cloud_processor:
+  ros__parameters:
+    # Input/Output
+    input_topic: "/oakd/points"
+    output_topic: "/map_builder/filtered_points"
+    
+    # Filtering
+    voxel_size: 0.02          # Voxel grid downsampling size
+    max_range: 8.0            # Maximum point distance
+    min_range: 0.3            # Minimum point distance
+    
+    # Outlier removal
+    outlier_removal: true
+    outlier_neighbors: 20     # Points to consider for outlier detection
+    outlier_std_ratio: 2.0    # Standard deviation threshold
+    
+    # Buffer management
+    buffer_size: 100          # Number of point clouds to keep
+    buffer_memory_limit: 500  # MB memory limit
+
+surface_reconstructor:
+  ros__parameters:
+    # Clustering
+    clustering_enabled: true
+    clustering_eps: 0.3       # DBSCAN epsilon parameter
+    min_cluster_size: 100     # Minimum points per cluster
+    
+    # Surface fitting
+    surface_fitting: true
+    plane_distance_threshold: 0.05  # RANSAC distance threshold
+    max_iterations: 1000      # RANSAC max iterations
+    
+    # Mesh generation
+    mesh_enabled: true
+    mesh_alpha: 0.5          # Alpha shape parameter
+    mesh_simplification: 0.1  # Mesh simplification factor
+
+map_builder_node:
+  ros__parameters:
+    # Occupancy grid
+    grid_resolution: 0.05     # Grid cell size in meters
+    grid_width: 400          # Grid width in cells
+    grid_height: 400         # Grid height in cells
+    
+    # Map update
+    update_rate: 2.0         # Hz
+    decay_rate: 0.95         # Occupancy decay factor
+    
+    # Coordinate frames
+    map_frame: "map"
+    base_frame: "base_link"
+    sensor_frame: "oakd_frame"
+```
+
+## Coordinate Frames
+
+```
+map
+└── base_link
+    └── oakd_frame (sensor)
+```
 
 ## Visualization in RViz2
 
-The system includes a pre-configured RViz2 setup that displays:
+### Quick Setup
+```bash
+# Start RViz2 with pre-configured display
+ros2 run rviz2 rviz2 -d rviz/map_builder.rviz
+```
 
-1. **Raw Point Cloud**: Direct output from OAK-D camera
-2. **Filtered Points**: Processed and filtered point cloud
-3. **Accumulated Points**: Historical point cloud data
-4. **Occupancy Grid**: 2D navigation map
-5. **3D Mesh Surfaces**: Reconstructed 3D surfaces
-6. **Surface Point Clusters**: Colored point clusters
+### Manual Setup
+1. **Fixed Frame**: Set to `map`
+2. **Add Displays**:
+   - PointCloud2: `/map_builder/filtered_points`
+   - PointCloud2: `/map_builder/accumulated_points`
+   - Map: `/map_builder/occupancy_grid`
+   - MarkerArray: `/map_builder/mesh_markers`
+   - MarkerArray: `/map_builder/surface_markers`
 
-### RViz2 Controls
+## Integration Examples
 
-- **Orbit View**: Navigate around the 3D scene
-- **2D Nav Goal**: Set navigation goals (if using with navigation stack)
-- **Measure Tool**: Measure distances in the map
-- **Point Publishing**: Click to publish points for testing
+### With Navigation Stack
+```yaml
+# nav2_params.yaml
+global_costmap:
+  global_costmap:
+    plugins: ["static_layer", "obstacle_layer"]
+    static_layer:
+      plugin: "nav2_costmap_2d::StaticLayer"
+      map_topic: "/map_builder/occupancy_grid"
+```
+
+### With Point Cloud Input
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import PointCloud2
+
+class CustomInputNode(Node):
+    def __init__(self):
+        super().__init__('custom_input')
+        self.publisher = self.create_publisher(
+            PointCloud2, 
+            '/oakd/points', 
+            10)
+        
+    def publish_custom_cloud(self, cloud_data):
+        # Publish your point cloud data
+        self.publisher.publish(cloud_data)
+```
+
+## Performance Tuning
+
+### For Real-time Processing
+```yaml
+# High-speed settings
+point_cloud_processor:
+  ros__parameters:
+    voxel_size: 0.05        # Larger voxels = faster processing
+    buffer_size: 50         # Smaller buffer = less memory
+    outlier_removal: false  # Disable for speed
+
+surface_reconstructor:
+  ros__parameters:
+    clustering_enabled: false  # Disable expensive clustering
+    mesh_enabled: false       # Skip mesh generation
+```
+
+### For High Quality Maps
+```yaml
+# High-quality settings  
+point_cloud_processor:
+  ros__parameters:
+    voxel_size: 0.01        # Fine detail
+    outlier_removal: true   # Clean data
+    buffer_size: 200        # More history
+
+surface_reconstructor:
+  ros__parameters:
+    clustering_eps: 0.1     # Tight clusters
+    plane_distance_threshold: 0.02  # Precise surfaces
+    mesh_simplification: 0.05       # Detailed meshes
+```
+
+## Algorithms Used
+
+### Point Cloud Processing
+- **Voxel Grid Filtering**: Uniform downsampling
+- **Statistical Outlier Removal**: Noise reduction
+- **Range Filtering**: Distance-based culling
+
+### Surface Reconstruction
+- **DBSCAN Clustering**: Point grouping
+- **RANSAC Plane Fitting**: Surface detection
+- **Alpha Shapes**: Mesh generation
+- **Mesh Simplification**: Performance optimization
+
+### Occupancy Mapping
+- **Bresenham Line Algorithm**: Ray tracing
+- **Probabilistic Updates**: Bayesian occupancy
+- **Memory Management**: Sliding window approach
 
 ## Troubleshooting
 
-### Common Issues
-
-#### 1. Camera Not Detected
+### No Point Cloud Input
 ```bash
-# Check USB connection and permissions
-lsusb | grep "Movidius"
-
-# Test with DepthAI
-python3 -c "import depthai as dai; print(dai.Device.getAllAvailableDevices())"
-```
-
-#### 2. No Point Cloud Data
-- Check camera topics: `ros2 topic list | grep oakd`
-- Verify camera parameters in `oakd_params.yaml`
-- Check lighting conditions (stereo cameras need texture)
-
-#### 3. Network Communication Issues
-```bash
-# Check ROS2 discovery
-ros2 node list
-
-# Test topic communication
-ros2 topic echo /oakd/points --max-count 1
-```
-
-#### 4. Performance Issues
-- Reduce point cloud resolution in parameters
-- Increase voxel filter size for downsampling
-- Adjust buffer sizes in configuration
-
-### Debug Commands
-
-```bash
-# Check node status
-ros2 node list
-ros2 node info /oakd_node
-
-# Monitor topics
-ros2 topic list
-ros2 topic hz /oakd/points
+# Check input topics
+ros2 topic list | grep points
 ros2 topic echo /oakd/points --max-count 1
 
-# Check transforms
+# Verify transforms
 ros2 run tf2_tools view_frames
-ros2 run tf2_ros tf2_echo base_link oakd_frame
-
-# Monitor system resources
-htop
 ```
 
-## Advanced Configuration
+### Poor Mapping Quality
+- Increase point cloud density (decrease voxel_size)
+- Adjust outlier removal parameters
+- Check lighting conditions for input sensor
+- Verify coordinate frame transformations
 
-### Custom Camera Calibration
+### Performance Issues
+- Increase voxel_size for faster processing
+- Reduce buffer_size to save memory
+- Disable expensive features (clustering, meshing)
+- Monitor CPU usage: `htop`
 
-If you have custom camera calibration data:
+### Memory Problems
+```bash
+# Monitor memory usage
+free -h
+ros2 topic hz /map_builder/accumulated_points
 
-1. Update camera intrinsics in `oakd_node.py`
-2. Modify focal length and baseline parameters
-3. Adjust distortion parameters if needed
-
-### Integration with Navigation
-
-To use with ROS2 Navigation Stack:
-
-1. The occupancy grid is published on `/map_builder/occupancy_grid`
-2. Ensure proper coordinate frame alignment
-3. Configure costmap parameters to use the generated map
-
-### Performance Tuning
-
-Key parameters for performance optimization:
-
-```yaml
-# In map_builder_params.yaml
-point_cloud_processor:
-  voxel_size: 0.05  # Increase for better performance
-  max_range: 5.0    # Reduce for indoor environments
-  buffer_size: 50   # Reduce for lower memory usage
-
-surface_reconstructor:
-  clustering_eps: 0.3      # Adjust clustering sensitivity
-  min_cluster_size: 100    # Filter small surfaces
+# Reduce memory parameters
+buffer_memory_limit: 200  # MB
+buffer_size: 30          # Point clouds
 ```
 
-## Future Enhancements
+## Development
 
-- [ ] SLAM integration with pose estimation
-- [ ] Loop closure detection
-- [ ] Multi-robot mapping support
-- [ ] Advanced mesh reconstruction algorithms
-- [ ] Integration with navigation planning
-- [ ] Real-time map streaming over network
+### Building with Debug Info
+```bash
+colcon build --packages-select map_builder --cmake-args -DCMAKE_BUILD_TYPE=Debug
+```
+
+### Running Tests
+```bash
+colcon test --packages-select map_builder
+colcon test-result --verbose
+```
+
+### Code Structure
+```
+map_builder/
+├── map_builder/
+│   ├── __init__.py
+│   ├── map_builder_node.py      # Main coordination node
+│   ├── point_cloud_processor.py # Point cloud filtering
+│   └── surface_reconstructor.py # 3D surface generation
+├── config/
+│   └── map_builder_params.yaml  # Configuration parameters
+├── launch/
+│   └── map_builder.launch.py    # Launch file
+└── rviz/
+    └── map_builder.rviz         # RViz configuration
+```
+
+## API Reference
+
+### PointCloudProcessor
+- `filter_points()`: Apply voxel grid and outlier removal
+- `update_buffer()`: Manage point cloud history
+- `transform_cloud()`: Handle coordinate transformations
+
+### SurfaceReconstructor  
+- `cluster_points()`: DBSCAN clustering
+- `fit_surfaces()`: RANSAC plane fitting
+- `generate_mesh()`: Alpha shape mesh creation
+
+### MapBuilderNode
+- `update_occupancy_grid()`: Generate navigation map
+- `publish_visualizations()`: Create RViz markers
+- `coordinate_processing()`: Manage pipeline timing
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
@@ -308,16 +380,22 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-For issues and questions:
-1. Check the troubleshooting section above
-2. Review ROS2 Jazzy documentation
-3. Check DepthAI documentation for camera-specific issues
-4. Open an issue in this repository
+- **Issues**: Report bugs and request features via GitHub Issues
+- **Documentation**: Check ROS2 documentation for general concepts
+- **Community**: ROS Discourse for mapping and navigation questions
 
-## References
+## Related Projects
 
-- [ROS2 Jazzy Documentation](https://docs.ros.org/en/jazzy/)
-- [DepthAI Documentation](https://docs.luxonis.com/en/latest/)
-- [OAK-D Camera Specifications](https://docs.luxonis.com/projects/hardware/en/latest/pages/BW1098OAK.html)
-- [Point Cloud Library (PCL)](https://pointclouds.org/)
-- [Open3D Documentation](http://www.open3d.org/docs/)
+- [OAK-D Driver](https://github.com/your-org/oakd_driver) - Compatible camera driver
+- [Nav2](https://github.com/ros-planning/navigation2) - ROS2 navigation stack
+- [PCL](https://pointclouds.org/) - Point Cloud Library
+- [Open3D](http://www.open3d.org/) - 3D data processing
+
+## Changelog
+
+### Version 1.0.0
+- Initial release
+- Point cloud processing pipeline
+- Surface reconstruction
+- Occupancy grid generation
+- RViz2 visualization support
