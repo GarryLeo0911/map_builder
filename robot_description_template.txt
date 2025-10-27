@@ -1,0 +1,13 @@
+# Simple Robot Description Package for OAK-D System
+
+simple_robot_description/
+├── urdf/
+│   └── simple_robot.urdf
+├── launch/
+│   └── robot_state_publisher.launch.py
+├── meshes/
+│   └── (robot mesh files if needed)
+├── package.xml
+└── CMakeLists.txt
+
+# Basic URDF for the robot with OAK-D camera

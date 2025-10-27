@@ -1,0 +1,27 @@
+point_cloud_processor:
+  ros__parameters:
+    voxel_size: 0.05
+    max_range: 10.0
+    min_range: 0.3
+    statistical_outlier_nb_neighbors: 20
+    statistical_outlier_std_ratio: 2.0
+    buffer_size: 100
+
+surface_reconstructor:
+  ros__parameters:
+    mesh_resolution: 0.1
+    clustering_eps: 0.2
+    clustering_min_samples: 10
+    min_cluster_size: 50
+    convex_hull_simplification: 0.05
+
+map_builder_node:
+  ros__parameters:
+    map_resolution: 0.05
+    map_width: 400
+    map_height: 400
+    map_origin_x: -10.0
+    map_origin_y: -10.0
+    robot_radius: 0.3
+    min_obstacle_height: 0.1
+    max_obstacle_height: 2.0

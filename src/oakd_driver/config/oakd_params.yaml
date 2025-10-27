@@ -1,0 +1,13 @@
+oakd_node:
+  ros__parameters:
+    fps: 30
+    rgb_resolution: "1080p"
+    depth_resolution: "720p"
+    confidence_threshold: 200
+    lr_check: true
+    subpixel: false
+    extended_disparity: false
+    baseline: 75.0  # mm
+    focal_length: 883.15  # pixels
+    frame_id: "oakd_frame"
+    publish_tf: true

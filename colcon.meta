@@ -1,0 +1,14 @@
+{
+    "names": {
+        "oakd_driver": {
+            "dependencies": [
+                "pip"
+            ]
+        },
+        "map_builder": {
+            "dependencies": [
+                "pip"
+            ]
+        }
+    }
+}
