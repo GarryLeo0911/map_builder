@@ -10,7 +10,12 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/map_builder.launch.py']),
+        ('share/' + package_name + '/launch', [
+            'launch/map_builder.launch.py',
+            '../../launch/complete_system.launch.py',
+            '../../launch/laptop_side.launch.py',
+            '../../launch/robot_side.launch.py'
+        ]),
         ('share/' + package_name + '/config', ['config/map_builder_params.yaml']),
         ('share/' + package_name + '/rviz', ['rviz/map_builder.rviz']),
     ],
