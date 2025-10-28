@@ -411,7 +411,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::registerWithPrevious(pc
 
         if (gicp.hasConverged())
         {
-            Eigen::Matrix4f transformation = gicp.getFinalTransformation();
             double fitness_score = gicp.getFitnessScore();
             
             RCLCPP_DEBUG(this->get_logger(), "Registration converged with fitness score: %f", fitness_score);
