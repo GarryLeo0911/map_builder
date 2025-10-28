@@ -23,8 +23,9 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common io filters segmentation features)
+find_package(PCL REQUIRED COMPONENTS common io filters segmentation features surface keypoints registration)
 find_package(Eigen3 REQUIRED)
+find_package(OpenMP REQUIRED)
 
 # Include directories
 include_directories(
@@ -54,6 +55,7 @@ ament_target_dependencies(point_cloud_processor
 
 target_link_libraries(point_cloud_processor
   ${PCL_LIBRARIES}
+  OpenMP::OpenMP_CXX
 )
 
 # Map Builder Node
@@ -76,6 +78,7 @@ ament_target_dependencies(map_builder_node
 
 target_link_libraries(map_builder_node
   ${PCL_LIBRARIES}
+  OpenMP::OpenMP_CXX
 )
 
 # Surface Reconstructor Node
@@ -97,6 +100,7 @@ ament_target_dependencies(surface_reconstructor
 
 target_link_libraries(surface_reconstructor
   ${PCL_LIBRARIES}
+  OpenMP::OpenMP_CXX
 )
 
 # Install executables

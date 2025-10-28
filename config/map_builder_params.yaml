@@ -1,27 +1,102 @@
 point_cloud_processor:
   ros__parameters:
-    voxel_size: 0.05
-    max_range: 10.0
-    min_range: 0.3
-    statistical_outlier_nb_neighbors: 20
-    statistical_outlier_std_ratio: 2.0
-    buffer_size: 100
+    # Basic filtering parameters
+    voxel_size: 0.03             # Finer voxel size
+    max_range: 8.0               # Reduced max range for better quality
+    min_range: 0.2               # Closer min range
+    statistical_outlier_nb_neighbors: 30
+    statistical_outlier_std_ratio: 1.5
+    buffer_size: 50              # Smaller buffer for faster processing
+    
+    # Enhanced filtering parameters
+    enable_bilateral_filter: true
+    bilateral_sigma_s: 15.0
+    bilateral_sigma_r: 0.05
+    enable_ground_removal: true
+    ground_threshold: 0.3
+    enable_radius_outlier_removal: true
+    radius_search: 0.1
+    min_neighbors_radius: 5
+    
+    # Registration parameters
+    enable_registration: true
+    registration_max_correspondence_distance: 0.1
+    registration_max_iterations: 50
+    registration_transformation_epsilon: 1e-6
+    registration_euclidean_fitness_epsilon: 1e-6
+    
+    # Adaptive voxel sizing
+    adaptive_voxel_size: true
+    min_voxel_size: 0.01
+    max_voxel_size: 0.05
+    target_points_per_cloud: 5000
 
 surface_reconstructor:
   ros__parameters:
-    mesh_resolution: 0.1
-    clustering_eps: 0.2
-    clustering_min_samples: 10
-    min_cluster_size: 50
-    convex_hull_simplification: 0.05
+    # Basic parameters
+    mesh_resolution: 0.05
+    clustering_tolerance: 0.1
+    clustering_min_cluster_size: 100
+    clustering_max_cluster_size: 50000
+    convex_hull_alpha: 0.1
+    
+    # Surface reconstruction method
+    reconstruction_method: "poisson"  # Options: poisson, greedy_projection, marching_cubes
+    
+    # Poisson reconstruction parameters
+    poisson_depth: 8
+    poisson_width: 0.0
+    poisson_scale: 1.1
+    poisson_iso_divide: 8
+    poisson_confidence: false
+    poisson_output_polygons: false
+    
+    # Greedy projection triangulation parameters
+    gp3_search_radius: 0.2
+    gp3_mu: 2.5
+    gp3_max_nearest_neighbors: 100
+    gp3_max_surface_angle: 0.785  # π/4
+    gp3_min_angle: 0.175          # π/18
+    gp3_max_angle: 2.094          # 2π/3
+    
+    # Normal estimation parameters
+    normal_search_radius: 0.1
+    normal_k_search: 20
+    
+    # Region growing parameters
+    enable_region_growing: true
+    region_growing_min_cluster_size: 50
+    region_growing_max_cluster_size: 1000000
+    region_growing_neighbors: 30
+    region_growing_smoothness_threshold: 3.0
+    region_growing_curvature_threshold: 1.0
 
 map_builder_node:
   ros__parameters:
-    map_resolution: 0.05
-    map_width: 400
-    map_height: 400
-    map_origin_x: -10.0
-    map_origin_y: -10.0
-    robot_radius: 0.3
-    min_obstacle_height: 0.1
-    max_obstacle_height: 2.0
+    # Basic map parameters
+    map_resolution: 0.03          # Finer resolution for better detail
+    map_width: 800               # Larger map for more coverage
+    map_height: 800
+    map_origin_x: -12.0          # Expanded origin
+    map_origin_y: -12.0
+    robot_radius: 0.25           # Smaller robot radius
+    min_obstacle_height: 0.05    # Lower threshold for obstacles
+    max_obstacle_height: 2.5     # Higher ceiling
+    
+    # Loop closure detection parameters
+    enable_loop_closure: true
+    loop_closure_distance_threshold: 2.0
+    loop_closure_feature_threshold: 0.7
+    min_loop_closure_interval: 10
+    keyframe_buffer_size: 100
+    
+    # Memory management parameters
+    enable_memory_management: true
+    max_map_points: 1000000
+    memory_cleanup_interval: 30.0
+    
+    # Probabilistic occupancy parameters
+    occupancy_hit_probability: 0.7
+    occupancy_miss_probability: 0.4
+    occupancy_min_probability: 0.12
+    occupancy_max_probability: 0.97
