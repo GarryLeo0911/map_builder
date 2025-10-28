@@ -10,7 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    """Launch OAK-D driver and map_builder with 3D visualization"""
+    """Launch OAK-D driver and map_builder with 3D visualization using oakd publisher"""
     
     # Get the package directories
     map_builder_dir = get_package_share_directory('map_builder')
@@ -34,22 +34,13 @@ def generate_launch_description():
         description='Launch RViz2 with 3D visualization'
     )
     
-    # OAK-D Driver Node - using oakd_driver package
+    # OAK-D Publisher Node
     oakd_node = Node(
         package='oakd_driver',
-        executable='oakd_driver_node',  # Correct executable for oakd_driver package
+        executable='oakd_publisher_node',
         name='oakd_driver',
         parameters=[{
             'fps': LaunchConfiguration('fps'),
-            'rgb_resolution': '720p',
-            'depth_resolution': '720p',
-            'enable_ir': False,
-            'tf_camera_name': 'oak',
-            'depth_confidence_threshold': 200,
-            'depth_lr_check': True,
-            'depth_subpixel': False,
-            'depth_extended_disparity': False,
-            'depth_preset_mode': 'HIGH_ACCURACY'
         }],
         output='screen'
     )
@@ -90,7 +81,7 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Static transform publishers (now only for camera to base_link relationship)
+    # Static transform publishers
     base_to_camera_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -104,7 +95,6 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         name='oak_left_camera_tf',
-        # identity transform (can be adjusted if your camera optical frame is offset)
         arguments=['0', '0', '0', '0', '0', '0', '1', 'oak_camera_frame', 'oak_left_camera_optical_frame'],
         output='screen'
     )
@@ -113,7 +103,6 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         name='map_to_base_tf',
-        # Static map frame - visual odometry will publish dynamic base_link transform
         arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
         output='screen'
     )
@@ -133,12 +122,12 @@ def generate_launch_description():
         fps_arg,
         launch_rviz_arg,
         oakd_node,
-        visual_odometry_node,  # Add visual odometry
+        visual_odometry_node,
         base_to_camera_tf,
         oak_left_camera_tf,
         map_to_base_tf,
         point_cloud_processor,
-        surface_reconstructor,  # This is key for 3D visualization
+        surface_reconstructor,
         map_builder_node,
         rviz_node
     ])
