@@ -34,22 +34,24 @@ def generate_launch_description():
         description='Launch RViz2 with 3D visualization'
     )
     
-    # OAK-D Driver Node
+    # OAK-D Driver Node - using most common executable name
+    # If this fails, check: ros2 pkg executables oakd_driver
+    # and update the executable name accordingly
     oakd_node = Node(
         package='oakd_driver',
-        executable='oakd_node',
-        name='oakd_node',
+        executable='driver_node',  # Alternative common name
+        name='oakd_driver',
         parameters=[{
-            'i_fps': LaunchConfiguration('fps'),
-            'i_rgb_resolution': '720p',
-            'i_depth_resolution': '720p',
-            'i_enable_ir': False,
-            'i_tf_camera_name': 'oak',
-            'i_depth_confidence_threshold': 200,
-            'i_depth_lr_check': True,
-            'i_depth_subpixel': False,
-            'i_depth_extended_disparity': False,
-            'i_depth_preset_mode': 'HIGH_ACCURACY'
+            'fps': LaunchConfiguration('fps'),
+            'rgb_resolution': '720p',
+            'depth_resolution': '720p',
+            'enable_ir': False,
+            'tf_camera_name': 'oak',
+            'depth_confidence_threshold': 200,
+            'depth_lr_check': True,
+            'depth_subpixel': False,
+            'depth_extended_disparity': False,
+            'depth_preset_mode': 'HIGH_ACCURACY'
         }],
         output='screen'
     )
