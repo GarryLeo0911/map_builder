@@ -495,7 +495,7 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr MapBuilder::extractFeatures(
 
         // Estimate normals
         pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-        pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
+        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
         pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
 
         ne.setInputCloud(cloud);
@@ -504,7 +504,7 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr MapBuilder::extractFeatures(
         ne.compute(*normals);
 
         // Extract FPFH features
-        pcl::FPFHEstimationOMP<pcl::PointXYZ, pcl::Normal, pcl::FPFHSignature33> fpfh;
+        pcl::FPFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::FPFHSignature33> fpfh;
         fpfh.setInputCloud(keypoints);
         fpfh.setInputNormals(normals);
         fpfh.setSearchSurface(cloud);
@@ -656,7 +656,7 @@ bool MapBuilder::verifyGeometricConsistency(const KeyFrame& current, const KeyFr
         ransac.setMaximumIterations(1000);
         
         pcl::Correspondences inlier_correspondences;
-        ransac.getCorrespondences(correspondences, inlier_correspondences);
+        ransac.getRemainingCorrespondences(correspondences, inlier_correspondences);
 
         double inlier_ratio = static_cast<double>(inlier_correspondences.size()) / correspondences.size();
         

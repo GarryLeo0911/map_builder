@@ -16,10 +16,8 @@
 #include <pcl/surface/convex_hull.h>
 #include <pcl/surface/concave_hull.h>
 #include <pcl/surface/poisson.h>
-#include <pcl/surface/marching_cubes_hoppe.h>
 #include <pcl/surface/gp3.h>
-#include <pcl/surface/organized_fast_mesh.h>
-#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/normal_3d.h>
 #include <pcl/segmentation/region_growing.h>
 #include <pcl_conversions/pcl_conversions.h>
 

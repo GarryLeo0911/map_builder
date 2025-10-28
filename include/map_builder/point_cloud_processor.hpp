@@ -12,7 +12,6 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/filters/bilateral.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/gicp.h>
 #include <pcl/features/normal_3d.h>

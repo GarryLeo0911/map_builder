@@ -7,13 +7,10 @@
 
 // Enhanced surface reconstruction includes
 #include <pcl/surface/poisson.h>
-#include <pcl/surface/marching_cubes_hoppe.h>
 #include <pcl/surface/gp3.h>
-#include <pcl/surface/organized_fast_mesh.h>
-#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/normal_3d.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/segmentation/region_growing.h>
-#include <pcl/segmentation/min_cut_segmentation.h>
 #include <pcl/surface/concave_hull.h>
 #include <pcl/surface/convex_hull.h>
 #include <pcl/common/centroid.h>
@@ -193,6 +190,472 @@ void SurfaceReconstructor::pointcloudCallback(const sensor_msgs::msg::PointCloud
     {
         RCLCPP_ERROR(this->get_logger(), "Error in enhanced surface reconstruction: %s", e.what());
     }
+}
+
+pcl::PointCloud<pcl::PointNormal>::Ptr SurfaceReconstructor::estimateNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
+    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+
+    try
+    {
+        if (cloud->empty())
+        {
+            return cloud_with_normals;
+        }
+
+        // Estimate normals
+        pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+
+        ne.setInputCloud(cloud);
+        ne.setSearchMethod(tree);
+        ne.setRadiusSearch(normal_search_radius_);
+        ne.setKSearch(normal_k_search_);
+        ne.compute(*normals);
+
+        // Combine points and normals
+        pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+
+        RCLCPP_DEBUG(this->get_logger(), "Estimated normals for %zu points", cloud_with_normals->size());
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Error estimating normals: %s", e.what());
+    }
+
+    return cloud_with_normals;
+}
+
+std::vector<pcl::PointCloud<pcl::PointNormal>::Ptr> SurfaceReconstructor::regionGrowingSegmentation(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals)
+{
+    std::vector<pcl::PointCloud<pcl::PointNormal>::Ptr> segments;
+
+    try
+    {
+        if (cloud_with_normals->empty())
+        {
+            return segments;
+        }
+
+        // Convert to XYZ for region growing
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::copyPointCloud(*cloud_with_normals, *cloud_xyz);
+
+        // Extract normals
+        pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+        for (const auto& point : cloud_with_normals->points)
+        {
+            pcl::Normal normal;
+            normal.normal_x = point.normal_x;
+            normal.normal_y = point.normal_y;
+            normal.normal_z = point.normal_z;
+            normals->points.push_back(normal);
+        }
+        normals->width = normals->points.size();
+        normals->height = 1;
+
+        // Region growing segmentation
+        pcl::RegionGrowing<pcl::PointXYZ, pcl::Normal> rg;
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+        
+        rg.setMinClusterSize(region_growing_min_cluster_size_);
+        rg.setMaxClusterSize(region_growing_max_cluster_size_);
+        rg.setSearchMethod(tree);
+        rg.setNumberOfNeighbours(region_growing_neighbors_);
+        rg.setInputCloud(cloud_xyz);
+        rg.setInputNormals(normals);
+        rg.setSmoothnessThreshold(region_growing_smoothness_threshold_ / 180.0 * M_PI);
+        rg.setCurvatureThreshold(region_growing_curvature_threshold_);
+
+        std::vector<pcl::PointIndices> cluster_indices;
+        rg.extract(cluster_indices);
+
+        // Extract segments
+        for (const auto& indices : cluster_indices)
+        {
+            pcl::PointCloud<pcl::PointNormal>::Ptr segment(new pcl::PointCloud<pcl::PointNormal>);
+            pcl::ExtractIndices<pcl::PointNormal> extract;
+            pcl::PointIndices::Ptr indices_ptr(new pcl::PointIndices(indices));
+            
+            extract.setInputCloud(cloud_with_normals);
+            extract.setIndices(indices_ptr);
+            extract.setNegative(false);
+            extract.filter(*segment);
+
+            if (!segment->empty())
+            {
+                segments.push_back(segment);
+            }
+        }
+
+        RCLCPP_DEBUG(this->get_logger(), "Region growing found %zu segments", segments.size());
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Error in region growing segmentation: %s", e.what());
+    }
+
+    return segments;
+}
+
+std::vector<pcl::PointCloud<pcl::PointNormal>::Ptr> SurfaceReconstructor::euclideanClustering(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals)
+{
+    std::vector<pcl::PointCloud<pcl::PointNormal>::Ptr> segments;
+
+    try
+    {
+        if (cloud_with_normals->empty())
+        {
+            return segments;
+        }
+
+        // Convert to XYZ for clustering
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::copyPointCloud(*cloud_with_normals, *cloud_xyz);
+
+        // Euclidean cluster extraction
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+        tree->setInputCloud(cloud_xyz);
+
+        std::vector<pcl::PointIndices> cluster_indices;
+        pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+        ec.setClusterTolerance(clustering_tolerance_);
+        ec.setMinClusterSize(clustering_min_cluster_size_);
+        ec.setMaxClusterSize(clustering_max_cluster_size_);
+        ec.setSearchMethod(tree);
+        ec.setInputCloud(cloud_xyz);
+        ec.extract(cluster_indices);
+
+        // Extract segments
+        for (const auto& indices : cluster_indices)
+        {
+            pcl::PointCloud<pcl::PointNormal>::Ptr segment(new pcl::PointCloud<pcl::PointNormal>);
+            pcl::ExtractIndices<pcl::PointNormal> extract;
+            pcl::PointIndices::Ptr indices_ptr(new pcl::PointIndices(indices));
+            
+            extract.setInputCloud(cloud_with_normals);
+            extract.setIndices(indices_ptr);
+            extract.setNegative(false);
+            extract.filter(*segment);
+
+            if (!segment->empty())
+            {
+                segments.push_back(segment);
+            }
+        }
+
+        RCLCPP_DEBUG(this->get_logger(), "Euclidean clustering found %zu segments", segments.size());
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Error in euclidean clustering: %s", e.what());
+    }
+
+    return segments;
+}
+
+visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateEnhancedMeshMarkers(
+    const std::vector<pcl::PointCloud<pcl::PointNormal>::Ptr>& segments, 
+    const std_msgs::msg::Header& header)
+{
+    visualization_msgs::msg::MarkerArray marker_array;
+
+    try
+    {
+        for (size_t i = 0; i < segments.size(); ++i)
+        {
+            const auto& segment = segments[i];
+
+            if (segment->size() < 10) // Need sufficient points for mesh
+            {
+                continue;
+            }
+
+            // Generate mesh for this segment
+            pcl::PolygonMesh mesh;
+            if (!generateMesh(segment, mesh))
+            {
+                continue;
+            }
+
+            // Create mesh marker
+            visualization_msgs::msg::Marker marker;
+            marker.header = header;
+            marker.ns = "enhanced_mesh_surfaces";
+            marker.id = static_cast<int>(i);
+            marker.type = visualization_msgs::msg::Marker::TRIANGLE_LIST;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+
+            // Set marker properties
+            marker.scale.x = 1.0;
+            marker.scale.y = 1.0;
+            marker.scale.z = 1.0;
+
+            marker.color.r = 0.0;
+            marker.color.g = 0.8;
+            marker.color.b = 0.2;
+            marker.color.a = 0.7;
+
+            // Convert mesh to marker
+            convertMeshToMarker(mesh, marker);
+
+            if (!marker.points.empty())
+            {
+                marker_array.markers.push_back(marker);
+            }
+        }
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Error generating enhanced mesh markers: %s", e.what());
+    }
+
+    return marker_array;
+}
+
+visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateEnhancedSurfaceMarkers(
+    const std::vector<pcl::PointCloud<pcl::PointNormal>::Ptr>& segments, 
+    const std_msgs::msg::Header& header)
+{
+    visualization_msgs::msg::MarkerArray marker_array;
+
+    try
+    {
+        for (size_t i = 0; i < segments.size(); ++i)
+        {
+            const auto& segment = segments[i];
+
+            visualization_msgs::msg::Marker marker;
+            marker.header = header;
+            marker.ns = "enhanced_surface_points";
+            marker.id = static_cast<int>(i);
+            marker.type = visualization_msgs::msg::Marker::SPHERE_LIST;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+
+            // Set marker properties
+            marker.scale.x = 0.03;
+            marker.scale.y = 0.03;
+            marker.scale.z = 0.03;
+
+            // Color based on segment index
+            double hue = (static_cast<double>(i) / segments.size()) * 360.0;
+            marker.color.r = (hue < 120.0) ? (120.0 - hue) / 120.0 : (hue > 240.0) ? (hue - 240.0) / 120.0 : 0.0;
+            marker.color.g = (hue < 240.0) ? std::max(0.0, (120.0 - std::abs(hue - 120.0)) / 120.0) : 0.0;
+            marker.color.b = (hue > 120.0) ? std::max(0.0, (120.0 - std::abs(hue - 240.0)) / 120.0) : 0.0;
+            marker.color.a = 0.8;
+
+            // Add points (subsample for performance)
+            size_t step = std::max(static_cast<size_t>(1), segment->size() / 200);
+            for (size_t j = 0; j < segment->size(); j += step)
+            {
+                geometry_msgs::msg::Point point;
+                point.x = segment->points[j].x;
+                point.y = segment->points[j].y;
+                point.z = segment->points[j].z;
+                marker.points.push_back(point);
+            }
+
+            if (!marker.points.empty())
+            {
+                marker_array.markers.push_back(marker);
+            }
+        }
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Error generating enhanced surface markers: %s", e.what());
+    }
+
+    return marker_array;
+}
+
+bool SurfaceReconstructor::generateMesh(pcl::PointCloud<pcl::PointNormal>::Ptr segment, pcl::PolygonMesh& mesh)
+{
+    try
+    {
+        if (reconstruction_method_ == "poisson")
+        {
+            return generatePoissonMesh(segment, mesh);
+        }
+        else if (reconstruction_method_ == "greedy_projection")
+        {
+            return generateGreedyProjectionMesh(segment, mesh);
+        }
+        else if (reconstruction_method_ == "marching_cubes")
+        {
+            return generateMarchingCubesMesh(segment, mesh);
+        }
+        else
+        {
+            return generateSimpleTriangulation(segment, mesh);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "Error generating mesh: %s", e.what());
+        return false;
+    }
+}
+
+bool SurfaceReconstructor::generatePoissonMesh(pcl::PointCloud<pcl::PointNormal>::Ptr segment, pcl::PolygonMesh& mesh)
+{
+    try
+    {
+        if (segment->size() < 10)
+        {
+            return false;
+        }
+
+        pcl::Poisson<pcl::PointNormal> poisson;
+        poisson.setInputCloud(segment);
+        poisson.setDepth(poisson_depth_);
+        poisson.setScale(poisson_scale_);
+        poisson.setIsoDivide(poisson_iso_divide_);
+        poisson.setConfidence(poisson_confidence_);
+        poisson.setOutputPolygons(poisson_output_polygons_);
+
+        poisson.performReconstruction(mesh);
+
+        return !mesh.polygons.empty();
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "Error in Poisson reconstruction: %s", e.what());
+        return false;
+    }
+}
+
+bool SurfaceReconstructor::generateGreedyProjectionMesh(pcl::PointCloud<pcl::PointNormal>::Ptr segment, pcl::PolygonMesh& mesh)
+{
+    try
+    {
+        if (segment->size() < 10)
+        {
+            return false;
+        }
+
+        pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
+        pcl::search::KdTree<pcl::PointNormal>::Ptr tree(new pcl::search::KdTree<pcl::PointNormal>);
+
+        gp3.setSearchMethod(tree);
+        gp3.setInputCloud(segment);
+        gp3.setSearchRadius(gp3_search_radius_);
+        gp3.setMu(gp3_mu_);
+        gp3.setMaximumNearestNeighbors(gp3_max_nearest_neighbors_);
+        gp3.setMaximumSurfaceAngle(gp3_max_surface_angle_);
+        gp3.setMinimumAngle(gp3_min_angle_);
+        gp3.setMaximumAngle(gp3_max_angle_);
+        gp3.setNormalConsistency(false);
+
+        gp3.reconstruct(mesh);
+
+        return !mesh.polygons.empty();
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "Error in greedy projection reconstruction: %s", e.what());
+        return false;
+    }
+}
+
+bool SurfaceReconstructor::generateMarchingCubesMesh(pcl::PointCloud<pcl::PointNormal>::Ptr segment, pcl::PolygonMesh& mesh)
+{
+    try
+    {
+        // Marching cubes might not be available in this PCL version
+        // Fall back to simple triangulation
+        RCLCPP_DEBUG(this->get_logger(), "Marching cubes not available, using simple triangulation");
+        return generateSimpleTriangulation(segment, mesh);
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "Error in marching cubes reconstruction: %s", e.what());
+        return false;
+    }
+}
+
+bool SurfaceReconstructor::generateSimpleTriangulation(pcl::PointCloud<pcl::PointNormal>::Ptr segment, pcl::PolygonMesh& mesh)
+{
+    try
+    {
+        if (segment->size() < 4)
+        {
+            return false;
+        }
+
+        // Convert to XYZ for convex hull
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::copyPointCloud(*segment, *cloud_xyz);
+
+        // Generate convex hull
+        pcl::ConvexHull<pcl::PointXYZ> hull;
+        hull.setInputCloud(cloud_xyz);
+        hull.reconstruct(mesh);
+
+        return !mesh.polygons.empty();
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "Error in simple triangulation: %s", e.what());
+        return false;
+    }
+}
+
+void SurfaceReconstructor::convertMeshToMarker(const pcl::PolygonMesh& mesh, visualization_msgs::msg::Marker& marker)
+{
+    try
+    {
+        // Convert PCL mesh to ROS marker
+        pcl::PointCloud<pcl::PointXYZ> cloud;
+        pcl::fromPCLPointCloud2(mesh.cloud, cloud);
+
+        for (const auto& polygon : mesh.polygons)
+        {
+            if (polygon.vertices.size() >= 3)
+            {
+                // Create triangles from polygon
+                for (size_t i = 1; i < polygon.vertices.size() - 1; ++i)
+                {
+                    marker.points.push_back(pclToGeometryPoint(cloud.points[polygon.vertices[0]]));
+                    marker.points.push_back(pclToGeometryPoint(cloud.points[polygon.vertices[i]]));
+                    marker.points.push_back(pclToGeometryPoint(cloud.points[polygon.vertices[i + 1]]));
+                }
+            }
+        }
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "Error converting mesh to marker: %s", e.what());
+    }
+}
+
+double SurfaceReconstructor::calculateAveragePointDistance(pcl::PointCloud<pcl::PointNormal>::Ptr segment)
+{
+    if (segment->size() < 2)
+    {
+        return 0.1; // Default distance
+    }
+
+    double total_distance = 0.0;
+    int count = 0;
+
+    // Sample a subset of points for efficiency
+    size_t step = std::max(static_cast<size_t>(1), segment->size() / 50);
+    for (size_t i = 0; i < segment->size(); i += step)
+    {
+        for (size_t j = i + step; j < segment->size() && count < 100; j += step)
+        {
+            double dx = segment->points[i].x - segment->points[j].x;
+            double dy = segment->points[i].y - segment->points[j].y;
+            double dz = segment->points[i].z - segment->points[j].z;
+            total_distance += std::sqrt(dx*dx + dy*dy + dz*dz);
+            count++;
+        }
+    }
+
+    return count > 0 ? total_distance / count : 0.1;
+}
 }
 
 std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> SurfaceReconstructor::clusterPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
