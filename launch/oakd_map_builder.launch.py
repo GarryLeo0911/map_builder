@@ -124,6 +124,15 @@ def generate_launch_description():
         arguments=['0', '0', '0.2', '0', '0', '0', 'base_link', 'oak_camera_frame'],
         output='screen'
     )
+
+    # Static transform: link oak_camera_frame -> oak_left_camera_optical_frame
+    oak_left_camera_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='oak_left_camera_tf',
+        arguments=['0', '0', '0', '0', '0', '0', '1', 'oak_camera_frame', 'oak_left_camera_optical_frame'],
+        output='screen'
+    )
     
     # Map frame transform publisher
     map_transform_publisher = Node(
@@ -160,6 +169,7 @@ def generate_launch_description():
         # Nodes
         oakd_node,
         static_transform_publisher,
+        oak_left_camera_tf,
         map_transform_publisher,
         point_cloud_processor,
         surface_reconstructor,
