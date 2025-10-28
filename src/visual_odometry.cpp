@@ -1,6 +1,6 @@
 #include "map_builder/visual_odometry.hpp"
 #include <chrono>
-#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 namespace map_builder
 {

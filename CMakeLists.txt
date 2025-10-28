@@ -18,6 +18,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
@@ -46,8 +47,10 @@ ament_target_dependencies(point_cloud_processor
   rclcpp
   sensor_msgs
   geometry_msgs
+  tf2
   tf2_ros
   tf2_geometry_msgs
+  tf2_eigen
   pcl_ros
   pcl_conversions
 )
@@ -67,6 +70,7 @@ ament_target_dependencies(map_builder_node
   sensor_msgs
   geometry_msgs
   nav_msgs
+  tf2
   tf2_ros
   tf2_geometry_msgs
   tf2_eigen
@@ -109,6 +113,7 @@ ament_target_dependencies(visual_odometry
   rclcpp
   sensor_msgs
   geometry_msgs
+  tf2
   tf2_ros
   tf2_geometry_msgs
   tf2_eigen
