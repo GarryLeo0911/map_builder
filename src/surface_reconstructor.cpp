@@ -656,7 +656,6 @@ double SurfaceReconstructor::calculateAveragePointDistance(pcl::PointCloud<pcl::
 
     return count > 0 ? total_distance / count : 0.1;
 }
-}
 
 std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> SurfaceReconstructor::clusterPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
@@ -1452,7 +1451,6 @@ double SurfaceReconstructor::calculateAveragePointDistance(pcl::PointCloud<pcl::
         RCLCPP_DEBUG(this->get_logger(), "Error calculating average point distance: %s", e.what());
         return 0.05;
     }
-}
 }
 
 } // namespace map_builder
