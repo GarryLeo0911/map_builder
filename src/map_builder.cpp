@@ -921,6 +921,5 @@ void MapBuilder::performMemoryCleanup()
         RCLCPP_ERROR(this->get_logger(), "Error in memory cleanup: %s", e.what());
     }
 }
-}
 
 } // namespace map_builder
