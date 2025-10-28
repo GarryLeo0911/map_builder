@@ -65,7 +65,7 @@ void PointCloudProcessor::pointcloudCallback(const sensor_msgs::msg::PointCloud2
     try
     {
         // Convert ROS PointCloud2 to PCL
-        PointCloud::Ptr cloud(new PointCloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
 
         if (cloud->empty())
@@ -75,7 +75,7 @@ void PointCloudProcessor::pointcloudCallback(const sensor_msgs::msg::PointCloud2
         }
 
         // Filter the point cloud
-        PointCloud::Ptr filtered_cloud = filterPointCloud(cloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud = filterPointCloud(cloud);
 
         if (filtered_cloud->empty())
         {
@@ -108,9 +108,9 @@ void PointCloudProcessor::pointcloudCallback(const sensor_msgs::msg::PointCloud2
     }
 }
 
-PointCloud::Ptr PointCloudProcessor::filterPointCloud(PointCloud::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::filterPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
-    PointCloud::Ptr filtered_cloud = cloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud = cloud;
 
     // Range filtering
     filtered_cloud = rangeFilter(filtered_cloud);
@@ -127,9 +127,9 @@ PointCloud::Ptr PointCloudProcessor::filterPointCloud(PointCloud::Ptr cloud)
     return filtered_cloud;
 }
 
-PointCloud::Ptr PointCloudProcessor::rangeFilter(PointCloud::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::rangeFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
-    PointCloud::Ptr filtered_cloud(new PointCloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
     for (const auto& point : cloud->points)
     {
@@ -149,11 +149,11 @@ PointCloud::Ptr PointCloudProcessor::rangeFilter(PointCloud::Ptr cloud)
     return filtered_cloud;
 }
 
-PointCloud::Ptr PointCloudProcessor::voxelDownsample(PointCloud::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::voxelDownsample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
-    PointCloud::Ptr downsampled_cloud(new PointCloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
-    pcl::VoxelGrid<PointType> voxel_filter;
+    pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
     voxel_filter.setInputCloud(cloud);
     voxel_filter.setLeafSize(voxel_size_, voxel_size_, voxel_size_);
     voxel_filter.filter(*downsampled_cloud);
@@ -161,11 +161,11 @@ PointCloud::Ptr PointCloudProcessor::voxelDownsample(PointCloud::Ptr cloud)
     return downsampled_cloud;
 }
 
-PointCloud::Ptr PointCloudProcessor::statisticalOutlierRemoval(PointCloud::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
-    PointCloud::Ptr filtered_cloud(new PointCloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
-    pcl::StatisticalOutlierRemoval<PointType> outlier_filter;
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZ> outlier_filter;
     outlier_filter.setInputCloud(cloud);
     outlier_filter.setMeanK(statistical_outlier_nb_neighbors_);
     outlier_filter.setStddevMulThresh(statistical_outlier_std_ratio_);
@@ -186,7 +186,7 @@ void PointCloudProcessor::publishAccumulatedPointCloud()
         }
 
         // Combine all point clouds from buffer
-        PointCloud::Ptr accumulated_cloud(new PointCloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr accumulated_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         
         for (const auto& cloud : pointcloud_buffer_)
         {
@@ -199,7 +199,7 @@ void PointCloudProcessor::publishAccumulatedPointCloud()
         }
 
         // Apply additional downsampling to combined cloud
-        PointCloud::Ptr downsampled_accumulated = voxelDownsample(accumulated_cloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled_accumulated = voxelDownsample(accumulated_cloud);
 
         // Publish accumulated point cloud
         sensor_msgs::msg::PointCloud2 accumulated_msg;

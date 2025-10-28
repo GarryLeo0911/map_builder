@@ -24,6 +24,10 @@ namespace map_builder
 class MapBuilder : public rclcpp::Node
 {
 public:
+    // Point cloud processing
+    using PointType = pcl::PointXYZ;
+    using PointCloud = pcl::PointCloud<PointType>;
+    
     MapBuilder();
     ~MapBuilder() = default;
 
@@ -46,10 +50,6 @@ private:
     // Current robot pose
     geometry_msgs::msg::PoseStamped::SharedPtr current_robot_pose_;
 
-    // Point cloud processing
-    using PointType = pcl::PointXYZ;
-    using PointCloud = pcl::PointCloud<PointType>;
-
     // ROS2 subscribers and publishers
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr robot_pose_sub_;
@@ -68,14 +68,14 @@ private:
     void publishOccupancyGrid();
 
     // Map processing functions
-    void updateOccupancyGrid(PointCloud::Ptr points);
-    void rayTraceFreespace(PointCloud::Ptr points);
+    void updateOccupancyGrid(pcl::PointCloud<pcl::PointXYZ>::Ptr points);
+    void rayTraceFreespace(pcl::PointCloud<pcl::PointXYZ>::Ptr points);
     std::vector<std::pair<int, int>> bresenhamLine(int x0, int y0, int x1, int y1);
     bool isValidGridCoordinate(int x, int y) const;
     int gridIndex(int x, int y) const;
 
     // Transform functions
-    PointCloud::Ptr transformPointsToMapFrame(PointCloud::Ptr points, const std_msgs::msg::Header& header);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformPointsToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr points, const std_msgs::msg::Header& header);
 
     // Utility functions
     void declareParameters();

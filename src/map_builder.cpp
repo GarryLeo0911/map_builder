@@ -85,7 +85,7 @@ void MapBuilder::pointcloudCallback(const sensor_msgs::msg::PointCloud2::SharedP
     try
     {
         // Convert ROS PointCloud2 to PCL
-        PointCloud::Ptr cloud(new PointCloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
 
         if (cloud->empty())
@@ -94,7 +94,7 @@ void MapBuilder::pointcloudCallback(const sensor_msgs::msg::PointCloud2::SharedP
         }
 
         // Transform points to map frame if necessary
-        PointCloud::Ptr transformed_points = transformPointsToMapFrame(cloud, msg->header);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_points = transformPointsToMapFrame(cloud, msg->header);
 
         if (!transformed_points || transformed_points->empty())
         {
@@ -117,7 +117,7 @@ void MapBuilder::robotPoseCallback(const geometry_msgs::msg::PoseStamped::Shared
     current_robot_pose_ = msg;
 }
 
-PointCloud::Ptr MapBuilder::transformPointsToMapFrame(PointCloud::Ptr points, const std_msgs::msg::Header& header)
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapBuilder::transformPointsToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr points, const std_msgs::msg::Header& header)
 {
     try
     {
@@ -132,7 +132,7 @@ PointCloud::Ptr MapBuilder::transformPointsToMapFrame(PointCloud::Ptr points, co
     }
 }
 
-void MapBuilder::updateOccupancyGrid(PointCloud::Ptr points)
+void MapBuilder::updateOccupancyGrid(pcl::PointCloud<pcl::PointXYZ>::Ptr points)
 {
     try
     {
@@ -183,7 +183,7 @@ void MapBuilder::updateOccupancyGrid(PointCloud::Ptr points)
     }
 }
 
-void MapBuilder::rayTraceFreespace(PointCloud::Ptr points)
+void MapBuilder::rayTraceFreespace(pcl::PointCloud<pcl::PointXYZ>::Ptr points)
 {
     try
     {

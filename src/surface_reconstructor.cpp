@@ -60,7 +60,7 @@ void SurfaceReconstructor::pointcloudCallback(const sensor_msgs::msg::PointCloud
     try
     {
         // Convert ROS PointCloud2 to PCL
-        PointCloud::Ptr cloud(new PointCloud);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
 
         if (cloud->empty() || static_cast<int>(cloud->size()) < clustering_min_cluster_size_)
@@ -70,7 +70,7 @@ void SurfaceReconstructor::pointcloudCallback(const sensor_msgs::msg::PointCloud
         }
 
         // Cluster points to identify surfaces
-        std::vector<PointCloud::Ptr> clusters = clusterPoints(cloud);
+        std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters = clusterPoints(cloud);
 
         if (clusters.empty())
         {
@@ -103,19 +103,19 @@ void SurfaceReconstructor::pointcloudCallback(const sensor_msgs::msg::PointCloud
     }
 }
 
-std::vector<PointCloud::Ptr> SurfaceReconstructor::clusterPoints(PointCloud::Ptr cloud)
+std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> SurfaceReconstructor::clusterPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
-    std::vector<PointCloud::Ptr> clusters;
+    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters;
 
     try
     {
         // Create KdTree for clustering
-        pcl::search::KdTree<PointType>::Ptr tree(new pcl::search::KdTree<PointType>);
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
         tree->setInputCloud(cloud);
 
         // Euclidean cluster extraction
         std::vector<pcl::PointIndices> cluster_indices;
-        pcl::EuclideanClusterExtraction<PointType> ec;
+        pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
         ec.setClusterTolerance(clustering_tolerance_);
         ec.setMinClusterSize(clustering_min_cluster_size_);
         ec.setMaxClusterSize(clustering_max_cluster_size_);
@@ -126,8 +126,8 @@ std::vector<PointCloud::Ptr> SurfaceReconstructor::clusterPoints(PointCloud::Ptr
         // Extract clusters
         for (const auto& indices : cluster_indices)
         {
-            PointCloud::Ptr cluster(new PointCloud);
-            pcl::ExtractIndices<PointType> extract;
+            pcl::PointCloud<pcl::PointXYZ>::Ptr cluster(new pcl::PointCloud<pcl::PointXYZ>);
+            pcl::ExtractIndices<pcl::PointXYZ> extract;
             pcl::PointIndices::Ptr indices_ptr(new pcl::PointIndices(indices));
             
             extract.setInputCloud(cloud);
@@ -153,7 +153,7 @@ std::vector<PointCloud::Ptr> SurfaceReconstructor::clusterPoints(PointCloud::Ptr
 }
 
 visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateMeshMarkers(
-    const std::vector<PointCloud::Ptr>& clusters, 
+    const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& clusters, 
     const std_msgs::msg::Header& header)
 {
     visualization_msgs::msg::MarkerArray marker_array;
@@ -188,7 +188,7 @@ visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateMeshMarkers(
             marker.color.a = 0.6;
 
             // Generate convex hull for the cluster
-            PointCloud::Ptr hull = generateConvexHull(cluster);
+            pcl::PointCloud<pcl::PointXYZ>::Ptr hull = generateConvexHull(cluster);
 
             if (hull && hull->size() >= 3)
             {
@@ -216,7 +216,7 @@ visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateMeshMarkers(
 }
 
 visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateSurfaceMarkers(
-    const std::vector<PointCloud::Ptr>& clusters, 
+    const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& clusters, 
     const std_msgs::msg::Header& header)
 {
     visualization_msgs::msg::MarkerArray marker_array;
@@ -276,9 +276,9 @@ visualization_msgs::msg::MarkerArray SurfaceReconstructor::generateSurfaceMarker
     return marker_array;
 }
 
-PointCloud::Ptr SurfaceReconstructor::generateConvexHull(PointCloud::Ptr cluster)
+pcl::PointCloud<pcl::PointXYZ>::Ptr SurfaceReconstructor::generateConvexHull(pcl::PointCloud<pcl::PointXYZ>::Ptr cluster)
 {
-    PointCloud::Ptr hull(new PointCloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr hull(new pcl::PointCloud<pcl::PointXYZ>);
 
     try
     {
@@ -344,7 +344,7 @@ PointCloud::Ptr SurfaceReconstructor::generateConvexHull(PointCloud::Ptr cluster
     return hull;
 }
 
-geometry_msgs::msg::Point SurfaceReconstructor::pclToGeometryPoint(const PointType& pcl_point)
+geometry_msgs::msg::Point SurfaceReconstructor::pclToGeometryPoint(const pcl::PointXYZ& pcl_point)
 {
     geometry_msgs::msg::Point point;
     point.x = pcl_point.x;

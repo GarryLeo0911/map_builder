@@ -40,7 +40,7 @@ private:
     using PointType = pcl::PointXYZ;
     using PointCloud = pcl::PointCloud<PointType>;
     
-    std::deque<PointCloud::Ptr> pointcloud_buffer_;
+    std::deque<pcl::PointCloud<pcl::PointXYZ>::Ptr> pointcloud_buffer_;
     std::mutex processing_mutex_;
 
     // ROS2 subscribers and publishers
@@ -60,10 +60,10 @@ private:
     void publishAccumulatedPointCloud();
 
     // Processing functions
-    PointCloud::Ptr filterPointCloud(PointCloud::Ptr cloud);
-    PointCloud::Ptr voxelDownsample(PointCloud::Ptr cloud);
-    PointCloud::Ptr rangeFilter(PointCloud::Ptr cloud);
-    PointCloud::Ptr statisticalOutlierRemoval(PointCloud::Ptr cloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filterPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr voxelDownsample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr rangeFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
 
     // Utility functions
     void declareParameters();
