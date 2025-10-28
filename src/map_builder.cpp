@@ -117,7 +117,7 @@ void MapBuilder::robotPoseCallback(const geometry_msgs::msg::PoseStamped::Shared
     current_robot_pose_ = msg;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr MapBuilder::transformPointsToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr points, const std_msgs::msg::Header& header)
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapBuilder::transformPointsToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr points, const std_msgs::msg::Header& /* header */)
 {
     try
     {

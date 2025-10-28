@@ -2,6 +2,8 @@
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+#include <set>
+#include <tuple>
 
 namespace map_builder
 {
@@ -287,49 +289,69 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr SurfaceReconstructor::generateConvexHull(pcl
             return hull;
         }
 
-        // Create 2D projection for convex hull (project to XY plane)
-        pcl::PointCloud<pcl::PointXY>::Ptr cloud_2d(new pcl::PointCloud<pcl::PointXY>);
-        for (const auto& point : cluster->points)
-        {
-            pcl::PointXY p2d;
-            p2d.x = point.x;
-            p2d.y = point.y;
-            cloud_2d->points.push_back(p2d);
-        }
-        cloud_2d->width = cloud_2d->points.size();
-        cloud_2d->height = 1;
-        cloud_2d->is_dense = true;
-
-        // Compute 2D convex hull
-        pcl::ConvexHull<pcl::PointXY> chull;
-        pcl::PointCloud<pcl::PointXY> hull_2d;
-        std::vector<pcl::Vertices> polygons;
+        // Use a simpler approach: find boundary points in 2D (approximate convex hull)
+        std::vector<pcl::PointXYZ> boundary_points;
         
-        chull.setInputCloud(cloud_2d);
-        chull.reconstruct(hull_2d, polygons);
+        // Find extreme points in X and Y directions
+        auto min_x_it = std::min_element(cluster->points.begin(), cluster->points.end(),
+            [](const pcl::PointXYZ& a, const pcl::PointXYZ& b) { return a.x < b.x; });
+        auto max_x_it = std::max_element(cluster->points.begin(), cluster->points.end(),
+            [](const pcl::PointXYZ& a, const pcl::PointXYZ& b) { return a.x < b.x; });
+        auto min_y_it = std::min_element(cluster->points.begin(), cluster->points.end(),
+            [](const pcl::PointXYZ& a, const pcl::PointXYZ& b) { return a.y < b.y; });
+        auto max_y_it = std::max_element(cluster->points.begin(), cluster->points.end(),
+            [](const pcl::PointXYZ& a, const pcl::PointXYZ& b) { return a.y < b.y; });
 
-        // Convert back to 3D by finding corresponding points in original cluster
-        for (const auto& hull_point_2d : hull_2d.points)
-        {
-            // Find closest point in original cluster
-            double min_dist = std::numeric_limits<double>::max();
-            PointType closest_point;
-            
-            for (const auto& orig_point : cluster->points)
-            {
-                double dist = std::sqrt(
-                    std::pow(orig_point.x - hull_point_2d.x, 2) + 
-                    std::pow(orig_point.y - hull_point_2d.y, 2)
-                );
-                
-                if (dist < min_dist)
-                {
-                    min_dist = dist;
-                    closest_point = orig_point;
-                }
+        // Add unique extreme points
+        std::set<std::tuple<float, float, float>> unique_points;
+        
+        auto add_unique_point = [&](const pcl::PointXYZ& point) {
+            auto key = std::make_tuple(point.x, point.y, point.z);
+            if (unique_points.find(key) == unique_points.end()) {
+                unique_points.insert(key);
+                boundary_points.push_back(point);
             }
-            
-            hull->points.push_back(closest_point);
+        };
+
+        add_unique_point(*min_x_it);
+        add_unique_point(*max_x_it);
+        add_unique_point(*min_y_it);
+        add_unique_point(*max_y_it);
+
+        // If we have at least 3 unique points, create the hull
+        if (boundary_points.size() >= 3)
+        {
+            // Sort points by angle around centroid for proper ordering
+            pcl::PointXYZ centroid;
+            centroid.x = centroid.y = centroid.z = 0;
+            for (const auto& point : boundary_points)
+            {
+                centroid.x += point.x;
+                centroid.y += point.y;
+                centroid.z += point.z;
+            }
+            centroid.x /= boundary_points.size();
+            centroid.y /= boundary_points.size();
+            centroid.z /= boundary_points.size();
+
+            // Sort by angle from centroid
+            std::sort(boundary_points.begin(), boundary_points.end(),
+                [&centroid](const pcl::PointXYZ& a, const pcl::PointXYZ& b) {
+                    float angle_a = std::atan2(a.y - centroid.y, a.x - centroid.x);
+                    float angle_b = std::atan2(b.y - centroid.y, b.x - centroid.x);
+                    return angle_a < angle_b;
+                });
+
+            hull->points = boundary_points;
+        }
+        else
+        {
+            // Fallback: use a subset of the original points
+            size_t step = std::max(static_cast<size_t>(1), cluster->size() / 8);
+            for (size_t i = 0; i < cluster->size() && hull->points.size() < 8; i += step)
+            {
+                hull->points.push_back(cluster->points[i]);
+            }
         }
 
         hull->width = hull->points.size();

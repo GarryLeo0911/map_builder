@@ -23,7 +23,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common io filters segmentation surface features)
+find_package(PCL REQUIRED COMPONENTS common io filters segmentation features)
 find_package(Eigen3 REQUIRED)
 
 # Include directories
