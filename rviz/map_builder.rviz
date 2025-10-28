@@ -1,18 +1,18 @@
 Panels:
-  - Class: rviz_common/tool_properties
+  - Class: rviz_default_plugins/tool_properties
     Expanded:
       - /2D Pose Estimate1
       - /2D Nav Goal1
       - /Publish Point1
     Name: Tool Properties
     Splitter Ratio: 0.5886790156364441
-  - Class: rviz_common/selection
+  - Class: rviz_default_plugins/selection
     Name: Selection
-  - Class: rviz_common/time
+  - Class: rviz_default_plugins/time
     Name: Time
     SyncMode: 0
     SyncSource: ""
-  - Class: rviz_common/displays
+  - Class: rviz_default_plugins/displays
     Help Height: 78
     Name: Displays
     Property Tree Widget:
@@ -79,7 +79,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /oakd/points
+        Value: /oak/points
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -198,7 +198,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: oakd_frame
+    Fixed Frame: oak_camera_frame
     Frame Rate: 30
   Name: root
   Tools:

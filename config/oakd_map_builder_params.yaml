@@ -1,0 +1,27 @@
+point_cloud_processor:
+  ros__parameters:
+    voxel_size: 0.03  # Smaller voxel size for better detail
+    max_range: 8.0    # Reduced range for indoor mapping
+    min_range: 0.2    # Slightly reduced min range
+    statistical_outlier_nb_neighbors: 15
+    statistical_outlier_std_ratio: 1.5
+    buffer_size: 50   # Smaller buffer for faster processing
+
+surface_reconstructor:
+  ros__parameters:
+    mesh_resolution: 0.08
+    clustering_eps: 0.15
+    clustering_min_samples: 8
+    min_cluster_size: 30
+    convex_hull_simplification: 0.03
+
+map_builder_node:
+  ros__parameters:
+    map_resolution: 0.05
+    map_width: 800     # Larger map for better coverage
+    map_height: 800
+    map_origin_x: -20.0
+    map_origin_y: -20.0
+    robot_radius: 0.25
+    min_obstacle_height: 0.05  # Lower threshold for small obstacles
+    max_obstacle_height: 2.5   # Higher threshold for ceiling detection

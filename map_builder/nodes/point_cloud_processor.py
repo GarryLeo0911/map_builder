@@ -40,7 +40,7 @@ class PointCloudProcessor(Node):
         # Subscribers
         self.pointcloud_sub = self.create_subscription(
             PointCloud2,
-            'oakd/points',
+            'oak/points',
             self.pointcloud_callback,
             10
         )
