@@ -63,7 +63,7 @@ def generate_launch_description():
     )
     
     # RViz2 node
-    rviz_config_file = os.path.join(package_dir, 'rviz', 'map_builder.rviz')
+    rviz_config_file = os.path.join(package_dir, 'rviz', 'map_builder_minimal.rviz')
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
