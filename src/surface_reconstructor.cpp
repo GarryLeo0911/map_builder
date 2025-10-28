@@ -290,7 +290,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr SurfaceReconstructor::generateConvexHull(pcl
         }
 
         // Use a simpler approach: find boundary points in 2D (approximate convex hull)
-        std::vector<pcl::PointXYZ> boundary_points;
+        std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> boundary_points;
         
         // Find extreme points in X and Y directions
         auto min_x_it = std::min_element(cluster->points.begin(), cluster->points.end(),
