@@ -99,11 +99,33 @@ target_link_libraries(surface_reconstructor
   ${PCL_LIBRARIES}
 )
 
+# Visual Odometry Node
+add_executable(visual_odometry 
+  src/visual_odometry_node.cpp
+  src/visual_odometry.cpp
+)
+
+ament_target_dependencies(visual_odometry
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  tf2_eigen
+  pcl_ros
+  pcl_conversions
+)
+
+target_link_libraries(visual_odometry
+  ${PCL_LIBRARIES}
+)
+
 # Install executables
 install(TARGETS
   point_cloud_processor
   map_builder_node
   surface_reconstructor
+  visual_odometry
   DESTINATION lib/${PROJECT_NAME}
 )
 

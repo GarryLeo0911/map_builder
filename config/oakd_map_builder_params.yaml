@@ -28,6 +28,20 @@ point_cloud_processor:
     max_voxel_size: 0.05
     target_points_per_cloud: 3000  # Reduced target for performance
 
+visual_odometry:
+  ros__parameters:
+    voxel_size: 0.02
+    max_correspondence_distance: 0.05
+    max_iterations: 50
+    transformation_epsilon: 1e-6
+    euclidean_fitness_epsilon: 1e-6
+    max_translation: 0.5      # Max movement per frame (meters)
+    max_rotation: 0.5         # Max rotation per frame (radians)
+    enable_normal_estimation: false
+    normal_search_radius: 0.03
+    use_gicp: true           # Use GICP for better accuracy
+    fitness_score_threshold: 0.3
+
 surface_reconstructor:
   ros__parameters:
     mesh_resolution: 0.08

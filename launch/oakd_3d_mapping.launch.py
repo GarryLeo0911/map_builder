@@ -54,6 +54,15 @@ def generate_launch_description():
         output='screen'
     )
     
+    # Visual Odometry Node - tracks camera motion
+    visual_odometry_node = Node(
+        package='map_builder',
+        executable='visual_odometry',
+        name='visual_odometry',
+        parameters=[LaunchConfiguration('config_file')],
+        output='screen'
+    )
+    
     # Point cloud processor node
     point_cloud_processor = Node(
         package='map_builder',
@@ -81,7 +90,7 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Transform publishers
+    # Static transform publishers (now only for camera to base_link relationship)
     base_to_camera_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -104,7 +113,8 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         name='map_to_base_tf',
-        arguments=['0', '0', '0', '0', '0', '0', 'map', 'base_link'],
+        # Static map frame - visual odometry will publish dynamic base_link transform
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
         output='screen'
     )
     
@@ -123,6 +133,7 @@ def generate_launch_description():
         fps_arg,
         launch_rviz_arg,
         oakd_node,
+        visual_odometry_node,  # Add visual odometry
         base_to_camera_tf,
         oak_left_camera_tf,
         map_to_base_tf,

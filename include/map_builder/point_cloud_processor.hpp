@@ -17,8 +17,10 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/fpfh.h>
 #include <pcl/keypoints/iss_3d.h>
+#include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.hpp>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include <deque>
 #include <mutex>
@@ -106,6 +108,9 @@ private:
     
     // Registration
     pcl::PointCloud<pcl::PointXYZ>::Ptr registerWithPrevious(pcl::PointCloud<pcl::PointXYZ>::Ptr current_cloud);
+    
+    // Coordinate transformation
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const std_msgs::msg::Header& header);
 
     // Utility functions
     void declareParameters();

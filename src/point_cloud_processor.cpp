@@ -128,8 +128,17 @@ void PointCloudProcessor::pointcloudCallback(const sensor_msgs::msg::PointCloud2
             return;
         }
 
-        // Filter the point cloud
-        pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud = filterPointCloud(cloud);
+        // Transform point cloud to map frame
+        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud = transformToMapFrame(cloud, msg->header);
+        
+        if (!transformed_cloud || transformed_cloud->empty())
+        {
+            RCLCPP_WARN(this->get_logger(), "Failed to transform point cloud to map frame");
+            return;
+        }
+
+        // Filter the transformed point cloud
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud = filterPointCloud(transformed_cloud);
 
         if (filtered_cloud->empty())
         {
@@ -147,14 +156,15 @@ void PointCloudProcessor::pointcloudCallback(const sensor_msgs::msg::PointCloud2
             }
         }
 
-        // Publish filtered point cloud
+        // Publish filtered point cloud in map frame
         sensor_msgs::msg::PointCloud2 filtered_msg;
         pcl::toROSMsg(*filtered_cloud, filtered_msg);
-        filtered_msg.header = msg->header;
+        filtered_msg.header.stamp = msg->header.stamp;
+        filtered_msg.header.frame_id = "map";  // Now in map frame
         filtered_pointcloud_pub_->publish(filtered_msg);
 
-        RCLCPP_DEBUG(this->get_logger(), "Processed point cloud: %zu -> %zu points", 
-                     cloud->size(), filtered_cloud->size());
+        RCLCPP_DEBUG(this->get_logger(), "Processed point cloud: %zu -> %zu -> %zu points", 
+                     cloud->size(), transformed_cloud->size(), filtered_cloud->size());
     }
     catch (const std::exception& e)
     {
@@ -465,7 +475,7 @@ void PointCloudProcessor::publishAccumulatedPointCloud()
         sensor_msgs::msg::PointCloud2 accumulated_msg;
         pcl::toROSMsg(*downsampled_accumulated, accumulated_msg);
         accumulated_msg.header.stamp = this->get_clock()->now();
-        accumulated_msg.header.frame_id = "oak_camera_frame";
+        accumulated_msg.header.frame_id = "map";  // Accumulated cloud is in map frame
         accumulated_pointcloud_pub_->publish(accumulated_msg);
 
         RCLCPP_DEBUG(this->get_logger(), "Published accumulated point cloud with %zu points", 
@@ -474,6 +484,73 @@ void PointCloudProcessor::publishAccumulatedPointCloud()
     catch (const std::exception& e)
     {
         RCLCPP_ERROR(this->get_logger(), "Error publishing accumulated point cloud: %s", e.what());
+    }
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::transformToMapFrame(
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
+    const std_msgs::msg::Header& header)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    
+    try
+    {
+        // Get transform from camera frame to map frame
+        geometry_msgs::msg::TransformStamped transform_stamped;
+        
+        // Wait for transform with timeout
+        if (!tf_buffer_->canTransform("map", header.frame_id, 
+                                     tf2::TimePointZero, tf2::durationFromSec(0.1)))
+        {
+            // If no dynamic transform available, try to get static transform
+            try 
+            {
+                transform_stamped = tf_buffer_->lookupTransform("map", header.frame_id, tf2::TimePointZero);
+                RCLCPP_DEBUG(this->get_logger(), "Using static transform from %s to map", header.frame_id.c_str());
+            }
+            catch (const tf2::TransformException& ex)
+            {
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                    "Could not transform point cloud from %s to map: %s", 
+                                    header.frame_id.c_str(), ex.what());
+                
+                // Return a copy of the original cloud if no transform available
+                *transformed_cloud = *cloud;
+                return transformed_cloud;
+            }
+        }
+        else
+        {
+            // Use the most recent transform
+            try
+            {
+                transform_stamped = tf_buffer_->lookupTransform("map", header.frame_id, 
+                                                              tf2::TimePointZero);
+            }
+            catch (const tf2::TransformException& ex)
+            {
+                RCLCPP_WARN(this->get_logger(), "TF lookup failed: %s", ex.what());
+                *transformed_cloud = *cloud;
+                return transformed_cloud;
+            }
+        }
+
+        // Convert TF transform to Eigen transform
+        Eigen::Affine3d eigen_transform = tf2::transformToEigen(transform_stamped);
+        
+        // Apply transformation to point cloud
+        pcl::transformPointCloud(*cloud, *transformed_cloud, eigen_transform);
+        
+        RCLCPP_DEBUG(this->get_logger(), "Transformed %zu points from %s to map frame", 
+                     cloud->size(), header.frame_id.c_str());
+        
+        return transformed_cloud;
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Error in point cloud transformation: %s", e.what());
+        *transformed_cloud = *cloud;
+        return transformed_cloud;
     }
 }
 

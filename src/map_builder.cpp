@@ -2,6 +2,7 @@
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+#include <tf2_eigen/tf2_eigen.h>
 
 // Enhanced includes for loop closure and optimization
 #include <pcl/features/fpfh.h>
@@ -37,7 +38,7 @@ MapBuilder::MapBuilder()
         std::bind(&MapBuilder::pointcloudCallback, this, std::placeholders::_1));
 
     robot_pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "robot_pose", 10,
+        "visual_odometry/pose", 10,  // Subscribe to visual odometry pose
         std::bind(&MapBuilder::robotPoseCallback, this, std::placeholders::_1));
 
     // Initialize publishers
@@ -190,18 +191,45 @@ void MapBuilder::robotPoseCallback(const geometry_msgs::msg::PoseStamped::Shared
     current_robot_pose_ = msg;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr MapBuilder::transformPointsToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr points, const std_msgs::msg::Header& /* header */)
+pcl::PointCloud<pcl::PointXYZ>::Ptr MapBuilder::transformPointsToMapFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr points, const std_msgs::msg::Header& header)
 {
     try
     {
-        // For simplicity, assume points are already in map frame
-        // In a real implementation, you would use TF2 to transform
-        return points;
+        // Points from point cloud processor are already in map frame
+        // due to the transformation in the processor
+        if (header.frame_id == "map")
+        {
+            return points;
+        }
+        
+        // If for some reason points are not in map frame, use TF to transform
+        geometry_msgs::msg::TransformStamped transform_stamped;
+        
+        try 
+        {
+            transform_stamped = tf_buffer_->lookupTransform("map", header.frame_id, tf2::TimePointZero);
+            
+            // Convert TF transform to Eigen transform
+            Eigen::Affine3d eigen_transform = tf2::transformToEigen(transform_stamped);
+            
+            // Apply transformation to point cloud
+            pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_points(new pcl::PointCloud<pcl::PointXYZ>);
+            pcl::transformPointCloud(*points, *transformed_points, eigen_transform);
+            
+            return transformed_points;
+        }
+        catch (const tf2::TransformException& ex)
+        {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                "Could not transform points from %s to map: %s", 
+                                header.frame_id.c_str(), ex.what());
+            return points;
+        }
     }
     catch (const std::exception& e)
     {
         RCLCPP_ERROR(this->get_logger(), "Error transforming points: %s", e.what());
-        return nullptr;
+        return points;
     }
 }
 
