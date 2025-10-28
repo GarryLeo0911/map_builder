@@ -18,6 +18,9 @@ setup(
     ],
     install_requires=[
         'setuptools',
+        'numpy',
+        'scipy',
+        'scikit-learn',
     ],
     zip_safe=True,
     maintainer='Your Name',
