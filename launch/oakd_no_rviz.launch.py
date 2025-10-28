@@ -104,6 +104,7 @@ def generate_launch_description():
         fps_arg,
         oakd_node,
         base_to_camera_tf,
+        oak_left_camera_tf,
         map_to_base_tf,
         point_cloud_processor,
         map_builder_node,

@@ -6,14 +6,48 @@ point_cloud_processor:
     statistical_outlier_nb_neighbors: 15
     statistical_outlier_std_ratio: 1.5
     buffer_size: 50   # Smaller buffer for faster processing
+    
+    # Enhanced filtering
+    enable_bilateral_filter: false  # Disable for performance
+    enable_ground_removal: true
+    ground_threshold: 0.3
+    enable_radius_outlier_removal: true
+    radius_search: 0.1
+    min_neighbors_radius: 5
+    
+    # Registration parameters - reduce crashes
+    enable_registration: true
+    registration_max_correspondence_distance: 0.1
+    registration_max_iterations: 30  # Reduced iterations
+    registration_transformation_epsilon: 1e-6
+    registration_euclidean_fitness_epsilon: 1e-6
+    
+    # Adaptive voxel sizing
+    adaptive_voxel_size: true
+    min_voxel_size: 0.01
+    max_voxel_size: 0.05
+    target_points_per_cloud: 3000  # Reduced target for performance
 
 surface_reconstructor:
   ros__parameters:
     mesh_resolution: 0.08
-    clustering_eps: 0.15
-    clustering_min_samples: 8
-    min_cluster_size: 30
-    convex_hull_simplification: 0.03
+    clustering_tolerance: 0.15
+    clustering_min_cluster_size: 30
+    clustering_max_cluster_size: 50000
+    convex_hull_alpha: 0.1
+    
+    # Normal estimation parameters - use K search, set radius to 0
+    normal_search_radius: 0.0  # Set to 0 to use K search instead
+    normal_k_search: 20
+    
+    # Enhanced surface reconstruction
+    reconstruction_method: "greedy_projection"  # More stable than poisson
+    enable_region_growing: false  # Disable to reduce complexity
+    
+    # Greedy projection parameters
+    gp3_search_radius: 0.2
+    gp3_mu: 2.5
+    gp3_max_nearest_neighbors: 100
 
 map_builder_node:
   ros__parameters:

@@ -389,6 +389,15 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloudProcessor::registerWithPrevious(pc
             return current_cloud;
         }
 
+        // Check minimum point requirements for GICP
+        const size_t min_points_for_gicp = 50;  // GICP needs sufficient points
+        if (current_cloud->size() < min_points_for_gicp || previous_cloud_->size() < min_points_for_gicp)
+        {
+            RCLCPP_DEBUG(this->get_logger(), "Insufficient points for GICP registration (%zu, %zu), skipping", 
+                         current_cloud->size(), previous_cloud_->size());
+            return current_cloud;
+        }
+
         // Use Generalized ICP for better registration
         pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> gicp;
         gicp.setInputSource(current_cloud);

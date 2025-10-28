@@ -210,8 +210,14 @@ pcl::PointCloud<pcl::PointNormal>::Ptr SurfaceReconstructor::estimateNormals(pcl
 
         ne.setInputCloud(cloud);
         ne.setSearchMethod(tree);
-        ne.setRadiusSearch(normal_search_radius_);
-        ne.setKSearch(normal_k_search_);
+        
+        // Use either radius search OR K search, not both
+        if (normal_search_radius_ > 0.0) {
+            ne.setRadiusSearch(normal_search_radius_);
+        } else {
+            ne.setKSearch(normal_k_search_);
+        }
+        
         ne.compute(*normals);
 
         // Combine points and normals
