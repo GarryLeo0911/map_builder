@@ -7,16 +7,14 @@ package_name = 'map_builder'
 setup(
     name=package_name,
     version='1.0.0',
-    packages=[package_name],
+    packages=[package_name, f'{package_name}.nodes'],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', [
-            'launch/map_builder.launch.py'
-        ]),
-        ('share/' + package_name + '/config', ['config/map_builder_params.yaml']),
-        ('share/' + package_name + '/rviz', ['rviz/map_builder.rviz']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
     ],
     install_requires=[
         'setuptools',
@@ -29,9 +27,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'point_cloud_processor = map_builder.point_cloud_processor:main',
-            'surface_reconstructor = map_builder.surface_reconstructor:main',
-            'map_builder_node = map_builder.map_builder_node:main',
+            'point_cloud_processor = map_builder.nodes.point_cloud_processor:main',
+            'surface_reconstructor = map_builder.nodes.surface_reconstructor:main',
+            'map_builder_node = map_builder.nodes.map_builder_node:main',
         ],
     },
 )
