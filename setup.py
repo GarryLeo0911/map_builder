@@ -35,6 +35,7 @@ setup(
             'surface_reconstructor = map_builder.nodes.surface_reconstructor:main',
             'map_builder_node = map_builder.nodes.map_builder_node:main',
             'system_monitor = map_builder.scripts.system_monitor:main',
+            'diagnostics = map_builder.scripts.diagnostics:main',
         ],
     },
 )

@@ -7,8 +7,6 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 import sensor_msgs_py.point_cloud2 as pc2
 import numpy as np
-from scipy.spatial import ConvexHull
-from sklearn.cluster import DBSCAN
 
 
 class SurfaceReconstructor(Node):
@@ -55,7 +53,30 @@ class SurfaceReconstructor(Node):
             10
         )
         
+        # Check for scipy and sklearn
+        self.has_scipy = self._check_scipy()
+        self.has_sklearn = self._check_sklearn()
+        
+        if not self.has_scipy:
+            self.get_logger().warn('scipy not available - using simplified clustering')
+        if not self.has_sklearn:
+            self.get_logger().warn('sklearn not available - using grid-based clustering')
+        
         self.get_logger().info('Surface reconstructor node initialized')
+    
+    def _check_scipy(self):
+        try:
+            from scipy.spatial import ConvexHull
+            return True
+        except ImportError:
+            return False
+    
+    def _check_sklearn(self):
+        try:
+            from sklearn.cluster import DBSCAN
+            return True
+        except ImportError:
+            return False
 
     def pointcloud_callback(self, msg):
         """Process point cloud and generate surface reconstruction"""
@@ -102,30 +123,94 @@ class SurfaceReconstructor(Node):
             return None
 
     def cluster_points(self, points):
-        """Cluster points using DBSCAN to identify surfaces"""
+        """Cluster points using simple grid-based or DBSCAN clustering"""
         try:
-            # Apply DBSCAN clustering
-            clustering = DBSCAN(eps=self.clustering_eps, min_samples=self.clustering_min_samples)
-            cluster_labels = clustering.fit_predict(points)
-            
-            # Group points by cluster
-            clusters = []
-            unique_labels = np.unique(cluster_labels)
-            
-            for label in unique_labels:
-                if label == -1:  # Skip noise points
-                    continue
+            if self.has_sklearn:
+                # Use DBSCAN if available
+                from sklearn.cluster import DBSCAN
+                clustering = DBSCAN(eps=self.clustering_eps, min_samples=self.clustering_min_samples)
+                cluster_labels = clustering.fit_predict(points)
                 
-                cluster_points = points[cluster_labels == label]
+                # Group points by cluster
+                clusters = []
+                unique_labels = np.unique(cluster_labels)
                 
-                if len(cluster_points) >= self.min_cluster_size:
-                    clusters.append(cluster_points)
+                for label in unique_labels:
+                    if label == -1:  # Skip noise points
+                        continue
+                    
+                    cluster_points = points[cluster_labels == label]
+                    
+                    if len(cluster_points) >= self.min_cluster_size:
+                        clusters.append(cluster_points)
+            else:
+                # Use simple grid-based clustering
+                clusters = self._grid_based_clustering(points)
             
             self.get_logger().debug(f'Found {len(clusters)} clusters')
             return clusters
             
         except Exception as e:
             self.get_logger().error(f'Error clustering points: {str(e)}')
+            return []
+    
+    def _grid_based_clustering(self, points):
+        """Simple grid-based clustering when sklearn is not available"""
+        try:
+            grid_size = self.clustering_eps
+            clusters = []
+            
+            # Create a dictionary to store grid cells
+            grid_cells = {}
+            
+            for point in points:
+                # Convert point to grid coordinates
+                grid_x = int(point[0] / grid_size)
+                grid_y = int(point[1] / grid_size)
+                grid_z = int(point[2] / grid_size)
+                grid_key = (grid_x, grid_y, grid_z)
+                
+                if grid_key not in grid_cells:
+                    grid_cells[grid_key] = []
+                grid_cells[grid_key].append(point)
+            
+            # Group adjacent cells into clusters
+            visited = set()
+            
+            for grid_key, cell_points in grid_cells.items():
+                if grid_key in visited or len(cell_points) < self.clustering_min_samples:
+                    continue
+                
+                # Start new cluster
+                cluster_points = []
+                to_visit = [grid_key]
+                
+                while to_visit:
+                    current_key = to_visit.pop()
+                    if current_key in visited:
+                        continue
+                    
+                    visited.add(current_key)
+                    if current_key in grid_cells:
+                        cluster_points.extend(grid_cells[current_key])
+                        
+                        # Add neighboring cells
+                        x, y, z = current_key
+                        for dx in [-1, 0, 1]:
+                            for dy in [-1, 0, 1]:
+                                for dz in [-1, 0, 1]:
+                                    neighbor_key = (x+dx, y+dy, z+dz)
+                                    if neighbor_key not in visited and neighbor_key in grid_cells:
+                                        if len(grid_cells[neighbor_key]) >= self.clustering_min_samples:
+                                            to_visit.append(neighbor_key)
+                
+                if len(cluster_points) >= self.min_cluster_size:
+                    clusters.append(np.array(cluster_points))
+            
+            return clusters
+            
+        except Exception as e:
+            self.get_logger().error(f'Error in grid-based clustering: {str(e)}')
             return []
 
     def generate_mesh_markers(self, clusters, header):
@@ -134,61 +219,105 @@ class SurfaceReconstructor(Node):
         
         try:
             for i, cluster in enumerate(clusters):
-                if len(cluster) < 4:  # Need at least 4 points for convex hull
+                if len(cluster) < 4:  # Need at least 4 points for mesh
                     continue
                 
-                # Create convex hull for the cluster
-                try:
-                    # Project to 2D for convex hull (use X-Y plane)
-                    points_2d = cluster[:, :2]
-                    hull_2d = ConvexHull(points_2d)
-                    
-                    # Create mesh marker
-                    marker = Marker()
-                    marker.header = header
-                    marker.ns = "mesh_surfaces"
-                    marker.id = i
-                    marker.type = Marker.TRIANGLE_LIST
-                    marker.action = Marker.ADD
-                    
-                    # Set marker properties
-                    marker.scale.x = 1.0
-                    marker.scale.y = 1.0
-                    marker.scale.z = 1.0
-                    
-                    marker.color.r = 0.0
-                    marker.color.g = 0.8
-                    marker.color.b = 0.0
-                    marker.color.a = 0.6
-                    
-                    # Generate triangles from convex hull
-                    hull_points_3d = cluster[hull_2d.vertices]
-                    
-                    # Simple triangulation - connect all vertices to first vertex
-                    for j in range(1, len(hull_points_3d) - 1):
-                        # Triangle: first vertex, current vertex, next vertex
+                # Create mesh marker
+                marker = Marker()
+                marker.header = header
+                marker.ns = "mesh_surfaces"
+                marker.id = i
+                marker.type = Marker.TRIANGLE_LIST
+                marker.action = Marker.ADD
+                
+                # Set marker properties
+                marker.scale.x = 1.0
+                marker.scale.y = 1.0
+                marker.scale.z = 1.0
+                
+                marker.color.r = 0.0
+                marker.color.g = 0.8
+                marker.color.b = 0.0
+                marker.color.a = 0.6
+                
+                # Generate triangles
+                if self.has_scipy:
+                    # Use convex hull if scipy is available
+                    try:
+                        from scipy.spatial import ConvexHull
+                        points_2d = cluster[:, :2]
+                        hull_2d = ConvexHull(points_2d)
+                        hull_points_3d = cluster[hull_2d.vertices]
+                        
+                        # Simple triangulation - connect all vertices to first vertex
+                        for j in range(1, len(hull_points_3d) - 1):
+                            p1 = Point()
+                            p1.x, p1.y, p1.z = float(hull_points_3d[0][0]), float(hull_points_3d[0][1]), float(hull_points_3d[0][2])
+                            
+                            p2 = Point()
+                            p2.x, p2.y, p2.z = float(hull_points_3d[j][0]), float(hull_points_3d[j][1]), float(hull_points_3d[j][2])
+                            
+                            p3 = Point()
+                            p3.x, p3.y, p3.z = float(hull_points_3d[j+1][0]), float(hull_points_3d[j+1][1]), float(hull_points_3d[j+1][2])
+                            
+                            marker.points.extend([p1, p2, p3])
+                    except Exception as e:
+                        self.get_logger().debug(f'Convex hull failed for cluster {i}: {str(e)}')
+                        continue
+                else:
+                    # Simple mesh generation without scipy
+                    triangles = self._simple_triangulation(cluster)
+                    for triangle in triangles:
                         p1 = Point()
-                        p1.x, p1.y, p1.z = float(hull_points_3d[0][0]), float(hull_points_3d[0][1]), float(hull_points_3d[0][2])
+                        p1.x, p1.y, p1.z = float(triangle[0][0]), float(triangle[0][1]), float(triangle[0][2])
                         
                         p2 = Point()
-                        p2.x, p2.y, p2.z = float(hull_points_3d[j][0]), float(hull_points_3d[j][1]), float(hull_points_3d[j][2])
+                        p2.x, p2.y, p2.z = float(triangle[1][0]), float(triangle[1][1]), float(triangle[1][2])
                         
                         p3 = Point()
-                        p3.x, p3.y, p3.z = float(hull_points_3d[j+1][0]), float(hull_points_3d[j+1][1]), float(hull_points_3d[j+1][2])
+                        p3.x, p3.y, p3.z = float(triangle[2][0]), float(triangle[2][1]), float(triangle[2][2])
                         
                         marker.points.extend([p1, p2, p3])
-                    
-                    if marker.points:
-                        marker_array.markers.append(marker)
+                
+                if marker.points:
+                    marker_array.markers.append(marker)
                         
-                except Exception as e:
-                    self.get_logger().debug(f'Skipping cluster {i} due to convex hull error: {str(e)}')
-                    continue
-                    
         except Exception as e:
             self.get_logger().error(f'Error generating mesh markers: {str(e)}')
         
         return marker_array
+    
+    def _simple_triangulation(self, points):
+        """Simple triangulation without scipy"""
+        try:
+            # Find boundary points in 2D (approximate convex hull)
+            points_2d = points[:, :2]
+            
+            # Find extreme points
+            min_x_idx = np.argmin(points_2d[:, 0])
+            max_x_idx = np.argmax(points_2d[:, 0])
+            min_y_idx = np.argmin(points_2d[:, 1])
+            max_y_idx = np.argmax(points_2d[:, 1])
+            
+            # Get unique boundary points
+            boundary_indices = list(set([min_x_idx, max_x_idx, min_y_idx, max_y_idx]))
+            
+            if len(boundary_indices) < 3:
+                return []
+            
+            boundary_points = points[boundary_indices]
+            
+            # Simple fan triangulation from first point
+            triangles = []
+            for i in range(1, len(boundary_points) - 1):
+                triangle = [boundary_points[0], boundary_points[i], boundary_points[i+1]]
+                triangles.append(triangle)
+            
+            return triangles
+            
+        except Exception as e:
+            self.get_logger().debug(f'Simple triangulation failed: {str(e)}')
+            return []
 
     def generate_surface_markers(self, clusters, header):
         """Generate surface point markers from clusters"""
