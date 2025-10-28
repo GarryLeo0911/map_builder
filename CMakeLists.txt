@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.8)
 project(map_builder)
 
+# Suppress CMake policy warnings from PCL
+cmake_policy(SET CMP0074 NEW)
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
