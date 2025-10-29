@@ -30,8 +30,6 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
-find_package(cv_bridge REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters segmentation features surface keypoints registration)
 find_package(Eigen3 REQUIRED)
@@ -130,8 +128,6 @@ ament_target_dependencies(enhanced_visual_odometry_node
   tf2_eigen
   pcl_ros
   pcl_conversions
-  cv_bridge
-  image_transport
 )
 
 target_link_libraries(enhanced_visual_odometry_node

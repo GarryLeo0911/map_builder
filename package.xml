@@ -22,8 +22,6 @@
   <build_depend>tf2_eigen</build_depend>
   <build_depend>pcl_ros</build_depend>
   <build_depend>pcl_conversions</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>image_transport</build_depend>
   <build_depend>eigen3</build_depend>
   
   <!-- Runtime dependencies -->
@@ -39,8 +37,6 @@
   <exec_depend>tf2_eigen</exec_depend>
   <exec_depend>pcl_ros</exec_depend>
   <exec_depend>pcl_conversions</exec_depend>
-  <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>image_transport</exec_depend>
   <exec_depend>oakd_driver</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>rviz_default_plugins</exec_depend>

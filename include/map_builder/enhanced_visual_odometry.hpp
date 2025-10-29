@@ -14,7 +14,6 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
-// Note: cv_bridge headers will be included through ROS2 dependencies
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -150,6 +149,10 @@ private:
     geometry_msgs::msg::Pose poseFromMatrix4d(const Eigen::Matrix4d& matrix);
     Eigen::Matrix4d matrix4dFromPose(const geometry_msgs::msg::Pose& pose);
     pcl::PointCloud<pcl::PointXYZ>::Ptr preprocessPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    
+    // Direct image conversion (without cv_bridge)
+    cv::Mat convertRosImageToOpenCV(const sensor_msgs::msg::Image::SharedPtr& ros_image);
+    cv::Mat convertRosDepthToOpenCV(const sensor_msgs::msg::Image::SharedPtr& ros_image);
     
     // Temporary storage for synchronized data
     cv::Mat latest_rgb_image_;
