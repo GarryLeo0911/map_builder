@@ -30,6 +30,8 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters segmentation features surface keypoints registration)
 find_package(Eigen3 REQUIRED)
 
@@ -38,6 +40,7 @@ include_directories(
   include
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 # Define PCL definitions
@@ -109,7 +112,32 @@ target_link_libraries(surface_reconstructor
   ${PCL_LIBRARIES}
 )
 
-# Visual Odometry Node
+# Enhanced Visual Odometry Node (with IMU fusion and feature tracking)
+add_executable(enhanced_visual_odometry_node 
+  src/enhanced_visual_odometry_node.cpp
+  src/enhanced_visual_odometry.cpp
+)
+
+ament_target_dependencies(enhanced_visual_odometry_node
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  tf2_eigen
+  pcl_ros
+  pcl_conversions
+  cv_bridge
+)
+
+target_link_libraries(enhanced_visual_odometry_node
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+# Visual Odometry Node (original)
 add_executable(visual_odometry 
   src/visual_odometry_node.cpp
   src/visual_odometry.cpp
@@ -137,6 +165,7 @@ install(TARGETS
   map_builder_node
   surface_reconstructor
   visual_odometry
+  enhanced_visual_odometry_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

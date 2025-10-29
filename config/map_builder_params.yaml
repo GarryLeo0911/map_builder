@@ -1,102 +1,149 @@
 point_cloud_processor:
   ros__parameters:
-    # Basic filtering parameters
-    voxel_size: 0.03             # Finer voxel size
-    max_range: 8.0               # Reduced max range for better quality
-    min_range: 0.2               # Closer min range
-    statistical_outlier_nb_neighbors: 30
-    statistical_outlier_std_ratio: 1.5
-    buffer_size: 50              # Smaller buffer for faster processing
+    # Basic filtering parameters optimized for OAK-D
+    voxel_size: 0.02             # Finer voxel size for OAK-D quality
+    max_range: 6.0               # Reduced for indoor mapping accuracy
+    min_range: 0.3               # Increased to avoid stereo noise
+    statistical_outlier_nb_neighbors: 20
+    statistical_outlier_std_ratio: 1.0  # Stricter outlier removal
+    buffer_size: 30              # Smaller buffer for real-time performance
+    
+    # OAK-D specific depth filtering
+    enable_depth_filtering: true
+    depth_confidence_threshold: 0.7
+    enable_stereo_consistency_check: true
+    stereo_baseline: 0.075       # OAK-D baseline: 7.5cm
     
     # Enhanced filtering parameters
-    enable_bilateral_filter: true
+    enable_bilateral_filter: false  # Disabled for stereo data
     bilateral_sigma_s: 15.0
     bilateral_sigma_r: 0.05
     enable_ground_removal: true
-    ground_threshold: 0.3
+    ground_threshold: 0.05       # More sensitive ground detection
     enable_radius_outlier_removal: true
-    radius_search: 0.1
-    min_neighbors_radius: 5
+    radius_search: 0.05          # Smaller radius for dense point clouds
+    min_neighbors_radius: 3      # Less strict for real-time
     
-    # Registration parameters
+    # Clustering parameters for object detection
+    enable_clustering: true
+    cluster_tolerance: 0.05
+    min_cluster_size: 10
+    max_cluster_size: 10000
+    
+    # Registration parameters optimized for accuracy
     enable_registration: true
-    registration_max_correspondence_distance: 0.1
-    registration_max_iterations: 50
+    registration_max_correspondence_distance: 0.05  # Tighter correspondence
+    registration_max_iterations: 30  # Faster convergence
     registration_transformation_epsilon: 1e-6
     registration_euclidean_fitness_epsilon: 1e-6
     
-    # Adaptive voxel sizing
+    # Adaptive voxel sizing based on point density
     adaptive_voxel_size: true
-    min_voxel_size: 0.01
-    max_voxel_size: 0.05
-    target_points_per_cloud: 5000
+    min_voxel_size: 0.005        # Finer minimum for detailed areas
+    max_voxel_size: 0.03         # Coarser maximum for distant areas
+    target_points_per_cloud: 3000  # Optimized for OAK-D throughput
+    
+    # Motion-based filtering for dynamic environments
+    enable_motion_filtering: true
+    max_point_motion: 0.5        # Max motion between frames
+    
+    # Normal estimation for better surface reconstruction
+    enable_normal_estimation: true
+    normal_search_radius: 0.03
+    normal_k_search: 10
+
+# Enhanced Visual Odometry parameters for OAK-D
+enhanced_visual_odometry:
+  ros__parameters:
+    # Feature detection parameters
+    feature_detector_threshold: 15.0  # Lower for more features
+    max_features: 1500               # More features for accuracy
+    match_ratio_threshold: 0.75      # Lowe's ratio test
+    min_matches: 30                  # Minimum for robust estimation
+    ransac_threshold: 2.0            # RANSAC outlier threshold
+    max_translation_per_frame: 0.5   # Motion validation
+    max_rotation_per_frame: 0.3      # Motion validation
+    
+    # IMU fusion parameters (OAK-D has built-in IMU)
+    enable_imu_fusion: true
+    imu_weight: 0.2                  # Conservative IMU weight
+    gravity_magnitude: 9.81
+    
+    # Point cloud odometry parameters
+    voxel_size: 0.015               # Finer for visual odometry
+    icp_max_correspondence_distance: 0.03  # Tight correspondence
+    icp_max_iterations: 30          # Fast convergence
+    icp_transformation_epsilon: 1e-6
+    
+    # Frame management
+    max_frame_buffer_size: 5        # Small buffer for real-time
 
 surface_reconstructor:
   ros__parameters:
-    # Basic parameters
-    mesh_resolution: 0.05
-    clustering_tolerance: 0.1
-    clustering_min_cluster_size: 100
-    clustering_max_cluster_size: 50000
-    convex_hull_alpha: 0.1
+    # Basic parameters optimized for OAK-D mapping
+    mesh_resolution: 0.03        # Finer resolution for better detail
+    clustering_tolerance: 0.05   # Tighter clustering
+    clustering_min_cluster_size: 50  # Smaller minimum
+    clustering_max_cluster_size: 25000
+    convex_hull_alpha: 0.05      # Smaller alpha for better boundaries
     
-    # Surface reconstruction method
-    reconstruction_method: "poisson"  # Options: poisson, greedy_projection, marching_cubes
+    # Surface reconstruction method optimized for real-time
+    reconstruction_method: "greedy_projection"  # Faster than Poisson
     
-    # Poisson reconstruction parameters
-    poisson_depth: 8
+    # Poisson reconstruction parameters (when used)
+    poisson_depth: 7             # Lower depth for speed
     poisson_width: 0.0
     poisson_scale: 1.1
-    poisson_iso_divide: 8
+    poisson_iso_divide: 6        # Lower for speed
     poisson_confidence: false
     poisson_output_polygons: false
     
-    # Greedy projection triangulation parameters
-    gp3_search_radius: 0.2
-    gp3_mu: 2.5
-    gp3_max_nearest_neighbors: 100
+    # Greedy projection triangulation parameters (optimized)
+    gp3_search_radius: 0.1       # Smaller search radius
+    gp3_mu: 2.0                  # Lower multiplier
+    gp3_max_nearest_neighbors: 50  # Fewer neighbors for speed
     gp3_max_surface_angle: 0.785  # π/4
     gp3_min_angle: 0.175          # π/18
     gp3_max_angle: 2.094          # 2π/3
     
-    # Normal estimation parameters
-    normal_search_radius: 0.1
-    normal_k_search: 20
+    # Normal estimation parameters optimized for stereo data
+    normal_search_radius: 0.05   # Smaller for fine details
+    normal_k_search: 15          # Fewer neighbors for speed
     
     # Region growing parameters
     enable_region_growing: true
-    region_growing_min_cluster_size: 50
-    region_growing_max_cluster_size: 1000000
-    region_growing_neighbors: 30
-    region_growing_smoothness_threshold: 3.0
-    region_growing_curvature_threshold: 1.0
+    region_growing_min_cluster_size: 25  # Smaller minimum
+    region_growing_max_cluster_size: 500000
+    region_growing_neighbors: 20 # Fewer neighbors
+    region_growing_smoothness_threshold: 2.5  # Tighter smoothness
+    region_growing_curvature_threshold: 0.8   # Tighter curvature
 
 map_builder_node:
   ros__parameters:
-    # Basic map parameters
-    map_resolution: 0.03          # Finer resolution for better detail
-    map_width: 800               # Larger map for more coverage
-    map_height: 800
-    map_origin_x: -12.0          # Expanded origin
-    map_origin_y: -12.0
-    robot_radius: 0.25           # Smaller robot radius
-    min_obstacle_height: 0.05    # Lower threshold for obstacles
-    max_obstacle_height: 2.5     # Higher ceiling
+    # Basic map parameters optimized for accuracy
+    map_resolution: 0.025        # Finer resolution for OAK-D quality
+    map_width: 1000             # Larger map for more coverage
+    map_height: 1000
+    map_origin_x: -12.5         # Expanded origin
+    map_origin_y: -12.5
+    robot_radius: 0.2           # Smaller robot radius
+    min_obstacle_height: 0.03   # Lower threshold for small obstacles
+    max_obstacle_height: 2.5    # Higher ceiling
     
-    # Loop closure detection parameters
+    # Loop closure detection parameters enhanced
     enable_loop_closure: true
-    loop_closure_distance_threshold: 2.0
-    loop_closure_feature_threshold: 0.7
-    min_loop_closure_interval: 10
-    keyframe_buffer_size: 100
+    loop_closure_distance_threshold: 1.5  # Tighter distance threshold
+    loop_closure_feature_threshold: 0.8   # Higher feature similarity
+    min_loop_closure_interval: 15         # More frequent checking
+    keyframe_buffer_size: 50             # Smaller buffer for memory
     
     # Memory management parameters
     enable_memory_management: true
-    max_map_points: 1000000
-    memory_cleanup_interval: 30.0
+    max_map_points: 750000      # Reduced for better performance
+    memory_cleanup_interval: 20.0  # More frequent cleanup
     
-    # Probabilistic occupancy parameters
-    occupancy_hit_probability: 0.7
-    occupancy_miss_probability: 0.4
-    occupancy_min_probability: 0.12
-    occupancy_max_probability: 0.97
+    # Probabilistic occupancy parameters (conservative)
+    occupancy_hit_probability: 0.75    # Higher confidence in hits
+    occupancy_miss_probability: 0.35   # Lower confidence in misses
+    occupancy_min_probability: 0.15    # Higher minimum uncertainty
+    occupancy_max_probability: 0.95    # Lower maximum certainty

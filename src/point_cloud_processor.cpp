@@ -3,11 +3,17 @@
 #include <pcl/common/distances.h>
 #include <pcl/search/organized.h>
 #include <pcl/filters/radius_outlier_removal.h>
+#include <pcl/filters/conditional_removal.h>
+#include <pcl/filters/passthrough.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/gicp.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/fpfh.h>
 #include <pcl/keypoints/iss_3d.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
 
 namespace map_builder
 {
@@ -15,7 +21,7 @@ namespace map_builder
 PointCloudProcessor::PointCloudProcessor()
     : Node("point_cloud_processor")
 {
-    RCLCPP_INFO(this->get_logger(), "Initializing Point Cloud Processor");
+    RCLCPP_INFO(this->get_logger(), "Initializing Enhanced Point Cloud Processor for OAK-D");
 
     // Initialize TF
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -25,7 +31,7 @@ PointCloudProcessor::PointCloudProcessor()
     declareParameters();
     getParameters();
 
-    // Initialize subscribers
+    // Initialize subscribers with message_filters for better synchronization
     pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "oak/points", 10,
         std::bind(&PointCloudProcessor::pointcloudCallback, this, std::placeholders::_1));
@@ -42,40 +48,63 @@ PointCloudProcessor::PointCloudProcessor()
         std::chrono::milliseconds(1000),
         std::bind(&PointCloudProcessor::publishAccumulatedPointCloud, this));
 
-    RCLCPP_INFO(this->get_logger(), "Point Cloud Processor initialized");
+    RCLCPP_INFO(this->get_logger(), "Enhanced Point Cloud Processor initialized with OAK-D optimizations");
 }
 
 void PointCloudProcessor::declareParameters()
 {
-    this->declare_parameter<double>("voxel_size", 0.03);
-    this->declare_parameter<double>("max_range", 8.0);
-    this->declare_parameter<double>("min_range", 0.2);
-    this->declare_parameter<int>("statistical_outlier_nb_neighbors", 30);
-    this->declare_parameter<double>("statistical_outlier_std_ratio", 1.5);
-    this->declare_parameter<int>("buffer_size", 50);
+    // Basic filtering parameters optimized for OAK-D
+    this->declare_parameter<double>("voxel_size", 0.02);  // Finer for OAK-D quality
+    this->declare_parameter<double>("max_range", 6.0);    // Reduced for indoor mapping
+    this->declare_parameter<double>("min_range", 0.3);    // Increased to avoid noise
+    this->declare_parameter<int>("statistical_outlier_nb_neighbors", 20);
+    this->declare_parameter<double>("statistical_outlier_std_ratio", 1.0);  // Stricter
+    this->declare_parameter<int>("buffer_size", 30);  // Smaller for real-time
+    
+    // OAK-D specific depth filtering
+    this->declare_parameter<bool>("enable_depth_filtering", true);
+    this->declare_parameter<double>("depth_confidence_threshold", 0.7);
+    this->declare_parameter<bool>("enable_stereo_consistency_check", true);
+    this->declare_parameter<double>("stereo_baseline", 0.075);  // OAK-D baseline: 7.5cm
     
     // Enhanced filtering parameters
-    this->declare_parameter<bool>("enable_bilateral_filter", true);
+    this->declare_parameter<bool>("enable_bilateral_filter", false);  // Disabled for stereo data
     this->declare_parameter<double>("bilateral_sigma_s", 15.0);
     this->declare_parameter<double>("bilateral_sigma_r", 0.05);
     this->declare_parameter<bool>("enable_ground_removal", true);
-    this->declare_parameter<double>("ground_threshold", 0.3);
+    this->declare_parameter<double>("ground_threshold", 0.05);  // More sensitive
     this->declare_parameter<bool>("enable_radius_outlier_removal", true);
-    this->declare_parameter<double>("radius_search", 0.1);
-    this->declare_parameter<int>("min_neighbors_radius", 5);
+    this->declare_parameter<double>("radius_search", 0.05);  // Smaller radius
+    this->declare_parameter<int>("min_neighbors_radius", 3);  // Less strict
+    
+    // Clustering parameters for object detection
+    this->declare_parameter<bool>("enable_clustering", true);
+    this->declare_parameter<double>("cluster_tolerance", 0.05);
+    this->declare_parameter<int>("min_cluster_size", 10);
+    this->declare_parameter<int>("max_cluster_size", 10000);
     
     // Registration parameters
     this->declare_parameter<bool>("enable_registration", true);
-    this->declare_parameter<double>("registration_max_correspondence_distance", 0.1);
-    this->declare_parameter<int>("registration_max_iterations", 50);
+    this->declare_parameter<double>("registration_max_correspondence_distance", 0.05);  // Tighter
+    this->declare_parameter<int>("registration_max_iterations", 30);  // Faster
     this->declare_parameter<double>("registration_transformation_epsilon", 1e-6);
     this->declare_parameter<double>("registration_euclidean_fitness_epsilon", 1e-6);
     
-    // Adaptive voxel sizing
+    // Adaptive voxel sizing based on point density
     this->declare_parameter<bool>("adaptive_voxel_size", true);
-    this->declare_parameter<double>("min_voxel_size", 0.01);
-    this->declare_parameter<double>("max_voxel_size", 0.05);
-    this->declare_parameter<int>("target_points_per_cloud", 5000);
+    this->declare_parameter<double>("min_voxel_size", 0.005);  // Finer minimum
+    this->declare_parameter<double>("max_voxel_size", 0.03);   // Coarser maximum
+    this->declare_parameter<int>("target_points_per_cloud", 3000);  // Optimized for OAK-D
+    
+    // Motion-based filtering
+    this->declare_parameter<bool>("enable_motion_filtering", true);
+    this->declare_parameter<double>("max_point_motion", 0.5);  // Max motion between frames
+    
+    // Normal estimation for better surface reconstruction
+    this->declare_parameter<bool>("enable_normal_estimation", true);
+    this->declare_parameter<double>("normal_search_radius", 0.03);
+    this->declare_parameter<int>("normal_k_search", 10);
+}
 }
 
 void PointCloudProcessor::getParameters()
