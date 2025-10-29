@@ -52,12 +52,12 @@ include_directories(
 add_definitions(${PCL_DEFINITIONS})
 
 # Point Cloud Processor Node
-add_executable(point_cloud_processor 
+add_executable(point_cloud_processor_node 
   src/point_cloud_processor_node.cpp
   src/point_cloud_processor.cpp
 )
 
-ament_target_dependencies(point_cloud_processor
+ament_target_dependencies(point_cloud_processor_node
   rclcpp
   sensor_msgs
   geometry_msgs
@@ -69,7 +69,7 @@ ament_target_dependencies(point_cloud_processor
   pcl_conversions
 )
 
-target_link_libraries(point_cloud_processor
+target_link_libraries(point_cloud_processor_node
   ${PCL_LIBRARIES}
 )
 
@@ -97,12 +97,12 @@ target_link_libraries(map_builder_node
 )
 
 # Surface Reconstructor Node
-add_executable(surface_reconstructor 
+add_executable(surface_reconstructor_node 
   src/surface_reconstructor_node.cpp
   src/surface_reconstructor.cpp
 )
 
-ament_target_dependencies(surface_reconstructor
+ament_target_dependencies(surface_reconstructor_node
   rclcpp
   sensor_msgs
   geometry_msgs
@@ -113,7 +113,7 @@ ament_target_dependencies(surface_reconstructor
   pcl_conversions
 )
 
-target_link_libraries(surface_reconstructor
+target_link_libraries(surface_reconstructor_node
   ${PCL_LIBRARIES}
 )
 
@@ -165,9 +165,9 @@ target_link_libraries(visual_odometry
 
 # Install executables
 install(TARGETS
-  point_cloud_processor
+  point_cloud_processor_node
   map_builder_node
-  surface_reconstructor
+  surface_reconstructor_node
   visual_odometry
   enhanced_visual_odometry_node
   DESTINATION lib/${PROJECT_NAME}
