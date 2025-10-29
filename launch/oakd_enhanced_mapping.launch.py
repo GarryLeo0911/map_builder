@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, TimerAction
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -33,6 +33,12 @@ def generate_launch_description():
         description='Path to the OAK-D driver parameters file'
     )
     
+    device_id_arg = DeclareLaunchArgument(
+        'device_id',
+        default_value='19443010A199DC1200',  # Your specific device ID
+        description='OAK-D device ID (MXID)'
+    )
+    
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz',
         default_value='true',
@@ -42,20 +48,27 @@ def generate_launch_description():
     # Get launch configurations
     params_file = LaunchConfiguration('params_file')
     oakd_params_file = LaunchConfiguration('oakd_params_file')
+    device_id = LaunchConfiguration('device_id')
     use_rviz = LaunchConfiguration('use_rviz')
     
-    # OAK-D Driver Launch
-    oakd_driver_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('oakd_driver'),
-                'launch',
-                'oakd_driver.launch.py'
-            ])
-        ]),
-        launch_arguments={
-            'params_file': oakd_params_file,
-        }.items()
+    # OAK-D Driver Launch (delayed to avoid conflicts)
+    oakd_driver_launch = TimerAction(
+        period=2.0,  # 2 second delay
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([
+                    PathJoinSubstitution([
+                        FindPackageShare('oakd_driver'),
+                        'launch',
+                        'oakd_driver.launch.py'
+                    ])
+                ]),
+                launch_arguments={
+                    'params_file': oakd_params_file,
+                    'device_id': device_id,
+                }.items()
+            )
+        ]
     )
     
     # Enhanced Visual Odometry with IMU fusion
@@ -162,6 +175,7 @@ def generate_launch_description():
         # Launch arguments
         params_file_arg,
         oakd_params_file_arg,
+        device_id_arg,
         use_rviz_arg,
         
         # OAK-D driver
