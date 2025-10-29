@@ -22,7 +22,7 @@ def generate_launch_description():
         default_value=PathJoinSubstitution([
             FindPackageShare('map_builder'),
             'config',
-            'oakd_map_builder_params.yaml'
+            'oakd_optimized_params.yaml'
         ]),
         description='Path to the OAK-D optimized parameters file'
     )
@@ -70,11 +70,11 @@ def generate_launch_description():
         output='screen',
         parameters=[params_file],
         remappings=[
-            # OAK-D topic mappings
-            ('/oak/rgb/image_raw', '/oak/rgb/image_raw'),
-            ('/oak/stereo/depth', '/oak/stereo/depth'),
-            ('/oak/points', '/oak/points'),
-            ('/oak/imu', '/oak/imu'),
+            # OAK-D topic mappings (correct topic names from driver)
+            ('oak/rgb/image_raw', '/camera/color/image_raw'),
+            ('oak/stereo/depth', '/camera/depth/image_rect_raw'),
+            ('oak/points', '/camera/depth/color/points'),
+            ('oak/imu', '/camera/imu'),
             # Output mappings
             ('/enhanced_visual_odometry/odometry', '/visual_odometry/odometry'),
             ('/enhanced_visual_odometry/pose', '/visual_odometry/pose'),
@@ -89,7 +89,7 @@ def generate_launch_description():
         output='screen',
         parameters=[params_file],
         remappings=[
-            ('/oak/points', '/oak/points'),
+            ('oak/points', '/camera/depth/color/points'),
             ('/map_builder/filtered_points', '/map_builder/filtered_points'),
         ]
     )
@@ -121,11 +121,36 @@ def generate_launch_description():
         ]
     )
     
+    # Temporary map frame publisher (until visual odometry starts working)
+    tf_map_to_odom = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='tf_map_to_odom',
+        arguments=[
+            '0', '0', '0',  # x, y, z
+            '0', '0', '0', '1',  # qx, qy, qz, qw
+            'map',
+            'odom'
+        ]
+    )
+    
+    tf_odom_to_base = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='tf_odom_to_base',
+        arguments=[
+            '0', '0', '0',  # x, y, z
+            '0', '0', '0', '1',  # qx, qy, qz, qw
+            'odom',
+            'base_link'
+        ]
+    )
+    
     # RViz configuration for enhanced mapping
     rviz_config = PathJoinSubstitution([
         FindPackageShare('map_builder'),
         'rviz',
-        'enhanced_mapping.rviz'
+        'map_builder_fixed.rviz'
     ])
     
     rviz_node = Node(
@@ -148,6 +173,8 @@ def generate_launch_description():
         
         # TF setup
         tf_oak_to_base,
+        tf_map_to_odom,
+        tf_odom_to_base,
         
         # Enhanced mapping pipeline
         enhanced_visual_odometry_node,
