@@ -29,11 +29,7 @@ def generate_launch_description():
     
     oakd_params_file_arg = DeclareLaunchArgument(
         'oakd_params_file',
-        default_value=PathJoinSubstitution([
-            FindPackageShare('oakd_driver'),
-            'config',
-            'oakd_params.yaml'
-        ]),
+        default_value='config/oakd_params.yaml',
         description='Path to the OAK-D driver parameters file'
     )
     
