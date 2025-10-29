@@ -33,10 +33,16 @@ def generate_launch_description():
         description='Path to the OAK-D driver parameters file'
     )
     
+    debug_arg = DeclareLaunchArgument(
+        'debug',
+        default_value='false',
+        description='Enable debug output for OAK-D driver'
+    )
+    
     device_id_arg = DeclareLaunchArgument(
         'device_id',
-        default_value='19443010A199DC1200',  # Your specific device ID
-        description='OAK-D device ID (MXID)'
+        default_value='',  # Empty for auto-detection
+        description='OAK-D device ID (MXID) - leave empty for auto-detection'
     )
     
     use_rviz_arg = DeclareLaunchArgument(
@@ -50,6 +56,7 @@ def generate_launch_description():
     oakd_params_file = LaunchConfiguration('oakd_params_file')
     device_id = LaunchConfiguration('device_id')
     use_rviz = LaunchConfiguration('use_rviz')
+    debug = LaunchConfiguration('debug')
     
     # OAK-D Driver Launch (delayed to avoid conflicts)
     oakd_driver_launch = TimerAction(
@@ -66,6 +73,7 @@ def generate_launch_description():
                 launch_arguments={
                     'params_file': oakd_params_file,
                     'device_id': device_id,
+                    'debug': debug,
                 }.items()
             )
         ]
@@ -177,6 +185,7 @@ def generate_launch_description():
         oakd_params_file_arg,
         device_id_arg,
         use_rviz_arg,
+        debug_arg,
         
         # OAK-D driver
         oakd_driver_launch,
