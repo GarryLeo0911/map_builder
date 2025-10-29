@@ -88,10 +88,10 @@ def generate_launch_description():
         parameters=[params_file],
         remappings=[
             # OAK-D topic mappings (correct topic names from driver)
-            ('oak/rgb/image_raw', '/camera/color/image_raw'),
-            ('oak/stereo/depth', '/camera/depth/image_rect_raw'),
-            ('oak/points', '/camera/depth/color/points'),
-            ('oak/imu', '/camera/imu'),
+            ('oak/rgb/image_raw', '/oak/rgb/image_raw'),
+            ('oak/stereo/depth', '/oak/stereo/depth'),
+            ('oak/points', '/oak/points'),
+            ('oak/imu', '/oak/imu'),
             # Output mappings
             ('/enhanced_visual_odometry/odometry', '/visual_odometry/odometry'),
             ('/enhanced_visual_odometry/pose', '/visual_odometry/pose'),
@@ -106,7 +106,7 @@ def generate_launch_description():
         output='screen',
         parameters=[params_file],
         remappings=[
-            ('oak/points', '/camera/depth/color/points'),
+            ('oak/points', '/oak/points'),
             ('/map_builder/filtered_points', '/map_builder/filtered_points'),
         ]
     )
