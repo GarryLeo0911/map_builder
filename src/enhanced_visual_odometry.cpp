@@ -249,7 +249,8 @@ void EnhancedVisualOdometry::processVisualOdometry()
         bool visual_success = false;
 
         // Try feature-based visual odometry first
-        if (current_frame.keypoints.size() >= min_matches_ && previous_frame.keypoints.size() >= min_matches_)
+        if (current_frame.keypoints.size() >= static_cast<size_t>(min_matches_) && 
+            previous_frame.keypoints.size() >= static_cast<size_t>(min_matches_))
         {
             visual_motion = estimateMotionFromFeatures(previous_frame, current_frame);
             visual_success = validateTransformation(visual_motion);
@@ -619,11 +620,12 @@ Eigen::Matrix4d EnhancedVisualOdometry::predictMotionFromIMU(double dt)
     return prediction;
 }
 
-void EnhancedVisualOdometry::fuseVisualIMU(const Eigen::Matrix4d& visual_motion, const Eigen::Matrix4d& imu_motion, double dt)
+void EnhancedVisualOdometry::fuseVisualIMU(const Eigen::Matrix4d& visual_motion, const Eigen::Matrix4d& imu_motion, double /* dt */)
 {
     try
     {
         // Simple weighted fusion (in practice, use Kalman filter or similar)
+        // Note: dt parameter reserved for future temporal integration
         Eigen::Matrix4d fused_motion = (1.0 - imu_weight_) * visual_motion + imu_weight_ * imu_motion;
         
         updateOdometry(fused_motion, latest_data_timestamp_);
