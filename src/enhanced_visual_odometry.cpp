@@ -2,6 +2,8 @@
 #include <chrono>
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.hpp>
 
 namespace map_builder
 {

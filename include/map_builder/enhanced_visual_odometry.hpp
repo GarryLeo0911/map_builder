@@ -14,7 +14,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
-#include <cv_bridge/cv_bridge.h>
+// Note: cv_bridge headers will be included through ROS2 dependencies
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
