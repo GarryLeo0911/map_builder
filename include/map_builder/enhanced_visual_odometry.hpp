@@ -93,7 +93,6 @@ private:
     // Frame management
     std::deque<VisualFrame> frame_buffer_;
     int max_frame_buffer_size_;
-    int current_frame_id_;
     
     // Feature detection and matching
     cv::Ptr<cv::ORB> feature_detector_;
@@ -109,6 +108,7 @@ private:
     // IMU integration
     sensor_msgs::msg::Imu last_imu_data_;
     bool imu_initialized_;
+    int current_frame_id_;
     Eigen::Vector3d velocity_;
     Eigen::Vector3d bias_gyro_;
     Eigen::Vector3d bias_accel_;

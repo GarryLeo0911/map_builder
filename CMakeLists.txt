@@ -7,6 +7,9 @@ if(POLICY CMP0144)
   cmake_policy(SET CMP0144 NEW)
 endif()
 
+# Suppress developer warnings including FLANN warnings
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE BOOL "" FORCE)
+
 # Suppress FLANN warnings
 set(FLANN_ROOT "")
 
