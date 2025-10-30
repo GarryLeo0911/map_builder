@@ -14,7 +14,8 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
-#include <cv_bridge/cv_bridge.h>
+// #include <cv_bridge/cv_bridge.h>  // Temporarily commented due to header corruption
+#include <sensor_msgs/image_encodings.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -150,6 +151,10 @@ private:
     geometry_msgs::msg::Pose poseFromMatrix4d(const Eigen::Matrix4d& matrix);
     Eigen::Matrix4d matrix4dFromPose(const geometry_msgs::msg::Pose& pose);
     pcl::PointCloud<pcl::PointXYZ>::Ptr preprocessPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    
+    // Manual image conversion (temporary replacement for cv_bridge)
+    cv::Mat rosImageToMat(const sensor_msgs::msg::Image::SharedPtr& msg);
+    bool convertRosImageToMat(const sensor_msgs::msg::Image::SharedPtr& msg, cv::Mat& output, const std::string& encoding);
     
     // Temporary storage for synchronized data
     cv::Mat latest_rgb_image_;

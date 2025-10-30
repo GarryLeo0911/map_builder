@@ -10,8 +10,8 @@ EnhancedVisualOdometry::EnhancedVisualOdometry()
     : Node("enhanced_visual_odometry"),
       cumulative_transform_(Eigen::Matrix4d::Identity()),
       odometry_initialized_(false),
-      imu_initialized_(false),
       current_frame_id_(0),
+      imu_initialized_(false),
       has_rgb_data_(false),
       has_depth_data_(false),
       has_pointcloud_data_(false)
@@ -127,13 +127,20 @@ void EnhancedVisualOdometry::rgbImageCallback(const sensor_msgs::msg::Image::Sha
 {
     try
     {
-        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-        std::lock_guard<std::mutex> lock(odometry_mutex_);
-        latest_rgb_image_ = cv_ptr->image.clone();
-        latest_data_timestamp_ = msg->header.stamp;
-        has_rgb_data_ = true;
+        cv::Mat rgb_image;
+        if (convertRosImageToMat(msg, rgb_image, sensor_msgs::image_encodings::BGR8))
+        {
+            std::lock_guard<std::mutex> lock(odometry_mutex_);
+            latest_rgb_image_ = rgb_image.clone();
+            latest_data_timestamp_ = msg->header.stamp;
+            has_rgb_data_ = true;
+        }
+        else
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to convert RGB image");
+        }
     }
-    catch (cv_bridge::Exception& e)
+    catch (const std::exception& e)
     {
         RCLCPP_ERROR(this->get_logger(), "RGB image conversion failed: %s", e.what());
     }
@@ -143,12 +150,19 @@ void EnhancedVisualOdometry::depthImageCallback(const sensor_msgs::msg::Image::S
 {
     try
     {
-        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
-        std::lock_guard<std::mutex> lock(odometry_mutex_);
-        latest_depth_image_ = cv_ptr->image.clone();
-        has_depth_data_ = true;
+        cv::Mat depth_image;
+        if (convertRosImageToMat(msg, depth_image, sensor_msgs::image_encodings::TYPE_16UC1))
+        {
+            std::lock_guard<std::mutex> lock(odometry_mutex_);
+            latest_depth_image_ = depth_image.clone();
+            has_depth_data_ = true;
+        }
+        else
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to convert depth image");
+        }
     }
-    catch (cv_bridge::Exception& e)
+    catch (const std::exception& e)
     {
         RCLCPP_ERROR(this->get_logger(), "Depth image conversion failed: %s", e.what());
     }
@@ -822,6 +836,60 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr EnhancedVisualOdometry::preprocessPointCloud
     }
 
     return filtered_cloud;
+}
+
+// Manual image conversion functions (temporary replacement for cv_bridge)
+bool EnhancedVisualOdometry::convertRosImageToMat(const sensor_msgs::msg::Image::SharedPtr& msg, cv::Mat& output, const std::string& encoding)
+{
+    try
+    {
+        // Handle BGR8 encoding
+        if (encoding == sensor_msgs::image_encodings::BGR8)
+        {
+            if (msg->encoding == "bgr8" || msg->encoding == "rgb8")
+            {
+                output = cv::Mat(msg->height, msg->width, CV_8UC3, (void*)msg->data.data()).clone();
+                if (msg->encoding == "rgb8")
+                {
+                    cv::cvtColor(output, output, cv::COLOR_RGB2BGR);
+                }
+                return true;
+            }
+            else if (msg->encoding == "mono8")
+            {
+                cv::Mat mono = cv::Mat(msg->height, msg->width, CV_8UC1, (void*)msg->data.data());
+                cv::cvtColor(mono, output, cv::COLOR_GRAY2BGR);
+                return true;
+            }
+        }
+        // Handle 16UC1 encoding (depth images)
+        else if (encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+        {
+            if (msg->encoding == "16UC1" || msg->encoding == "mono16")
+            {
+                output = cv::Mat(msg->height, msg->width, CV_16UC1, (void*)msg->data.data()).clone();
+                return true;
+            }
+        }
+        
+        RCLCPP_ERROR(this->get_logger(), "Unsupported image encoding: %s -> %s", msg->encoding.c_str(), encoding.c_str());
+        return false;
+    }
+    catch (const std::exception& e)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Image conversion error: %s", e.what());
+        return false;
+    }
+}
+
+cv::Mat EnhancedVisualOdometry::rosImageToMat(const sensor_msgs::msg::Image::SharedPtr& msg)
+{
+    cv::Mat result;
+    if (convertRosImageToMat(msg, result, msg->encoding))
+    {
+        return result;
+    }
+    return cv::Mat();
 }
 
 } // namespace map_builder
