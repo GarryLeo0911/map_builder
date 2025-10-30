@@ -9,8 +9,8 @@ namespace map_builder
 EnhancedVisualOdometry::EnhancedVisualOdometry()
     : Node("enhanced_visual_odometry"),
       cumulative_transform_(Eigen::Matrix4d::Identity()),
-      odometry_initialized_(false),
       current_frame_id_(0),
+      odometry_initialized_(false),
       imu_initialized_(false),
       has_rgb_data_(false),
       has_depth_data_(false),
@@ -248,7 +248,7 @@ void EnhancedVisualOdometry::processVisualOdometry()
         bool visual_success = false;
 
         // Try feature-based visual odometry first
-        if (current_frame.keypoints.size() >= min_matches_ && previous_frame.keypoints.size() >= min_matches_)
+        if (static_cast<int>(current_frame.keypoints.size()) >= min_matches_ && static_cast<int>(previous_frame.keypoints.size()) >= min_matches_)
         {
             visual_motion = estimateMotionFromFeatures(previous_frame, current_frame);
             visual_success = validateTransformation(visual_motion);
@@ -623,6 +623,8 @@ void EnhancedVisualOdometry::fuseVisualIMU(const Eigen::Matrix4d& visual_motion,
     try
     {
         // Simple weighted fusion (in practice, use Kalman filter or similar)
+        // TODO: Use dt for time-aware fusion weighting
+        (void)dt;  // Suppress unused parameter warning
         Eigen::Matrix4d fused_motion = (1.0 - imu_weight_) * visual_motion + imu_weight_ * imu_motion;
         
         updateOdometry(fused_motion, latest_data_timestamp_);
