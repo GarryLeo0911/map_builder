@@ -40,13 +40,14 @@ def generate_launch_description():
         name='rgbd_sync',
         parameters=[{
             'approx_sync': True,
-            'queue_size': 10,
+            'sync_queue_size': 10,  # Use the new parameter name
             'approx_sync_max_interval': 0.01,
         }],
         remappings=[
             ('/rgb/image', '/oak/rgb/image_raw'),
             ('/depth/image', '/oak/depth/image_raw'),
             ('/rgb/camera_info', '/oak/rgb/camera_info'),
+            ('/depth/camera_info', '/oak/rgb/camera_info'),  # Use RGB camera info for depth if depth camera info not available
         ]
     )
     
