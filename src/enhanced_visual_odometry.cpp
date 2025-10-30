@@ -8,8 +8,8 @@ namespace map_builder
 
 EnhancedVisualOdometry::EnhancedVisualOdometry()
     : Node("enhanced_visual_odometry"),
-      cumulative_transform_(Eigen::Matrix4d::Identity()),
       current_frame_id_(0),
+      cumulative_transform_(Eigen::Matrix4d::Identity()),
       odometry_initialized_(false),
       imu_initialized_(false),
       has_rgb_data_(false),
