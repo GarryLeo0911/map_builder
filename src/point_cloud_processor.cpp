@@ -105,6 +105,7 @@ void PointCloudProcessor::declareParameters()
     this->declare_parameter<double>("normal_search_radius", 0.03);
     this->declare_parameter<int>("normal_k_search", 10);
 }
+}
 
 void PointCloudProcessor::getParameters()
 {

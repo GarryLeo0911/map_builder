@@ -7,12 +7,6 @@ if(POLICY CMP0144)
   cmake_policy(SET CMP0144 NEW)
 endif()
 
-# Suppress developer warnings including FLANN warnings
-set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE BOOL "" FORCE)
-
-# Suppress FLANN warnings
-set(FLANN_ROOT "")
-
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -36,6 +30,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters segmentation features surface keypoints registration)
 find_package(Eigen3 REQUIRED)
@@ -52,12 +47,12 @@ include_directories(
 add_definitions(${PCL_DEFINITIONS})
 
 # Point Cloud Processor Node
-add_executable(point_cloud_processor_node 
+add_executable(point_cloud_processor 
   src/point_cloud_processor_node.cpp
   src/point_cloud_processor.cpp
 )
 
-ament_target_dependencies(point_cloud_processor_node
+ament_target_dependencies(point_cloud_processor
   rclcpp
   sensor_msgs
   geometry_msgs
@@ -69,7 +64,7 @@ ament_target_dependencies(point_cloud_processor_node
   pcl_conversions
 )
 
-target_link_libraries(point_cloud_processor_node
+target_link_libraries(point_cloud_processor
   ${PCL_LIBRARIES}
 )
 
@@ -97,12 +92,12 @@ target_link_libraries(map_builder_node
 )
 
 # Surface Reconstructor Node
-add_executable(surface_reconstructor_node 
+add_executable(surface_reconstructor 
   src/surface_reconstructor_node.cpp
   src/surface_reconstructor.cpp
 )
 
-ament_target_dependencies(surface_reconstructor_node
+ament_target_dependencies(surface_reconstructor
   rclcpp
   sensor_msgs
   geometry_msgs
@@ -113,7 +108,7 @@ ament_target_dependencies(surface_reconstructor_node
   pcl_conversions
 )
 
-target_link_libraries(surface_reconstructor_node
+target_link_libraries(surface_reconstructor
   ${PCL_LIBRARIES}
 )
 
@@ -134,6 +129,7 @@ ament_target_dependencies(enhanced_visual_odometry_node
   tf2_eigen
   pcl_ros
   pcl_conversions
+  cv_bridge
 )
 
 target_link_libraries(enhanced_visual_odometry_node
@@ -165,9 +161,9 @@ target_link_libraries(visual_odometry
 
 # Install executables
 install(TARGETS
-  point_cloud_processor_node
+  point_cloud_processor
   map_builder_node
-  surface_reconstructor_node
+  surface_reconstructor
   visual_odometry
   enhanced_visual_odometry_node
   DESTINATION lib/${PROJECT_NAME}
