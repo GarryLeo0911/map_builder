@@ -3,57 +3,24 @@
 <package format="3">
   <name>map_builder</name>
   <version>1.0.0</version>
-  <description>3D mapping and surface reconstruction package for OAK-D camera data</description>
-  <maintainer email="you@example.com">Your Name</maintainer>
+  <description>RTAB-Map SLAM package for building maps from remote camera data</description>
+  <maintainer email="your.email@example.com">Your Name</maintainer>
+
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-
-  <!-- C++ build dependencies -->
-  <build_depend>rclcpp</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-  <build_depend>tf2</build_depend>
-  <build_depend>tf2_ros</build_depend>
-  <build_depend>tf2_geometry_msgs</build_depend>
-  <build_depend>tf2_eigen</build_depend>
-  <build_depend>pcl_ros</build_depend>
-  <build_depend>pcl_conversions</build_depend>
-  <build_depend>eigen3</build_depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>rtabmap_slam</depend>
+  <depend>rtabmap_viz</depend>
+  <depend>rtabmap_conversions</depend>
+  <depend>rtabmap_util</depend>
+  <depend>rtabmap_msgs</depend>
   
-  <!-- Runtime dependencies -->
-  <exec_depend>rclcpp</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>visualization_msgs</exec_depend>
-  <exec_depend>tf2</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
-  <exec_depend>tf2_geometry_msgs</exec_depend>
-  <exec_depend>tf2_eigen</exec_depend>
-  <exec_depend>pcl_ros</exec_depend>
-  <exec_depend>pcl_conversions</exec_depend>
-  <exec_depend>oakd_driver</exec_depend>
-  <exec_depend>rviz2</exec_depend>
-  <exec_depend>rviz_default_plugins</exec_depend>
-  
-  <!-- RTABMap dependencies for ROS2 Jazzy -->
-  <exec_depend>rtabmap_ros</exec_depend>
-  <exec_depend>rtabmap_msgs</exec_depend>
-  <exec_depend>rtabmap_sync</exec_depend>
-  <exec_depend>rtabmap_slam</exec_depend>
-  <exec_depend>rtabmap_odom</exec_depend>
-  <exec_depend>rtabmap_viz</exec_depend>
-
-  <!-- Test dependencies -->
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
-  <test_depend>ament_cmake_gtest</test_depend>
-
   <export>
     <build_type>ament_cmake</build_type>
   </export>
