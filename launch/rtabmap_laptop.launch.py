@@ -45,7 +45,7 @@ def generate_launch_description():
         }],
         remappings=[
             ('/rgb/image', '/oak/rgb/image_raw'),
-            ('/depth/image', '/oak/stereo/depth'),
+            ('/depth/image', '/oak/depth/image_raw'),
             ('/rgb/camera_info', '/oak/rgb/camera_info'),
         ]
     )
