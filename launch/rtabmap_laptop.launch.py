@@ -41,13 +41,14 @@ def generate_launch_description():
         parameters=[{
             'approx_sync': True,
             'sync_queue_size': 10,  # Use the new parameter name
-            'approx_sync_max_interval': 0.01,
+            'approx_sync_max_interval': 0.1,  # Increased from 0.01 to 0.1 seconds
+            'topic_queue_size': 10,
         }],
         remappings=[
             ('/rgb/image', '/oak/rgb/image_raw'),
             ('/depth/image', '/oak/depth/image_raw'),
             ('/rgb/camera_info', '/oak/rgb/camera_info'),
-            ('/depth/camera_info', '/oak/rgb/camera_info'),  # Use RGB camera info for depth if depth camera info not available
+            ('/depth/camera_info', '/oak/depth/camera_info'),
         ]
     )
     
