@@ -62,10 +62,10 @@ def generate_launch_description():
             'wait_for_transform': 0.2,
             'approx_sync': True,
             # Optimized parameters for OAK-D
-            'Odom/Strategy': 1,  # Frame-to-frame
-            'Vis/EstimationType': 1,  # 3D-to-2D (PnP)
-            'Vis/MaxFeatures': 1000,
-            'Vis/MinInliers': 15,
+            'Odom/Strategy': '1',  # Frame-to-frame
+            'Vis/EstimationType': '1',  # 3D-to-2D (PnP)
+            'Vis/MaxFeatures': '1000',
+            'Vis/MinInliers': '15',
         }],
         remappings=[
             ('/rgb/image', '/rgbd_sync/rgb/image'),
@@ -91,13 +91,13 @@ def generate_launch_description():
             'wait_for_transform': 0.2,
             'database_path': '~/.ros/rtabmap.db',
             # Mapping parameters optimized for OAK-D
-            'RGBD/CreateOccupancyGrid': True,
-            'Grid/CellSize': 0.05,
-            'Grid/3D': True,
-            'Rtabmap/DetectionRate': 1.0,
-            'Mem/RehearsalSimilarity': 0.30,
-            'Vis/MaxFeatures': 400,
-            'Vis/MinInliers': 20,
+            'RGBD/CreateOccupancyGrid': 'true',
+            'Grid/CellSize': '0.05',
+            'Grid/3D': 'true',
+            'Rtabmap/DetectionRate': '1.0',
+            'Mem/RehearsalSimilarity': '0.30',
+            'Vis/MaxFeatures': '400',
+            'Vis/MinInliers': '20',
         }],
         remappings=[
             ('/rgb/image', '/rgbd_sync/rgb/image'),
