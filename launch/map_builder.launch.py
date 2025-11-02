@@ -35,7 +35,7 @@ def launch_setup(context, *args, **kwargs):
         ("rgb/image", f"/{robot_name}/rgb/image_raw"),
         ("rgb/camera_info", f"/{robot_name}/rgb/camera_info"),
         ("depth/image", f"/{robot_name}/stereo/image_raw"),
-        ("odom", f"/{robot_name}/vio/odometry")
+        ("odom", "/odom")  # Use the odom topic that RTABmap is already publishing
     ]
 
     return [

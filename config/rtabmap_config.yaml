@@ -3,6 +3,17 @@
 
 rtabmap:
   ros__parameters:
+    # Frame settings
+    frame_id: "oak_parent_frame"
+    odom_frame_id: "odom"
+    map_frame_id: "map"
+    
+    # Subscription settings
+    subscribe_rgb: true
+    subscribe_depth: true
+    subscribe_odom_info: false
+    approx_sync: true
+    
     # Memory management
     Mem/NotLinkedNodesKept: "false"
     Mem/STMSize: "30"
@@ -15,9 +26,6 @@ rtabmap:
     # Optimization
     RGBD/OptimizeFromGraphEnd: "false"
     RGBD/NeighborLinkRefining: "true"
-    
-    # Localization mode (set to false for mapping)
-    Mem/IncrementalMemory: "true"
     
     # Visual odometry
     Vis/EstimationType: "1"  # 0=None, 1=3DoF, 2=6DoF
@@ -32,3 +40,8 @@ rtabmap:
     
     # Database
     Db/TargetVersion: "0.21.4"
+    
+    # Quality settings for OAK-D cameras
+    RGBD/CreateOccupancyGrid: "true"
+    RGBD/LinearUpdate: "0.1"
+    RGBD/AngularUpdate: "0.1"
