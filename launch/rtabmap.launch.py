@@ -19,6 +19,7 @@ def launch_setup(context, *args, **kwargs):
     depthai_prefix = get_package_share_directory("depthai_ros_driver")
 
     params_file = LaunchConfiguration("params_file")
+    
     parameters = [
         {
             "frame_id": name,
@@ -30,9 +31,12 @@ def launch_setup(context, *args, **kwargs):
             # QoS settings to match camera publisher (best_effort)
             "qos_image": 1,  # 1 = BEST_EFFORT, 0 = RELIABLE
             "qos_camera_info": 1,
+            # Very small queue sizes for 5fps and wireless with history_depth=1
+            "topic_queue_size": 2,
+            "sync_queue_size": 2,
         }
     ]
-
+    
     remappings = [
         ("rgb/image", name + "/rgb/image_rect"),
         ("rgb/camera_info", name + "/rgb/camera_info"),
