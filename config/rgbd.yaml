@@ -5,11 +5,11 @@
     stereo:
       i_subpixel: true
       # QoS settings optimized for wireless communication
-      i_qos_reliability: "reliable"
+      i_qos_reliability: "best_effort"
       i_qos_durability: "volatile"
       i_qos_history_depth: 2
     rgb:
       # QoS settings optimized for wireless communication
-      i_qos_reliability: "reliable"
+      i_qos_reliability: "best_effort"
       i_qos_durability: "volatile"
       i_qos_history_depth: 2
