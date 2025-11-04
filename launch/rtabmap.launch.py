@@ -27,6 +27,9 @@ def launch_setup(context, *args, **kwargs):
             "subscribe_odom_info": True,
             "approx_sync": True,
             "Rtabmap/DetectionRate": "3.5",
+            # QoS settings to match camera publisher (best_effort)
+            "qos_image": 1,  # 1 = BEST_EFFORT, 0 = RELIABLE
+            "qos_camera_info": 1,
         }
     ]
 
