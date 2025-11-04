@@ -7,9 +7,9 @@
       # QoS settings optimized for wireless communication
       i_qos_reliability: "best_effort"
       i_qos_durability: "volatile"
-      i_qos_history_depth: 5
+      i_qos_history_depth: 3
     rgb:
       # QoS settings optimized for wireless communication
       i_qos_reliability: "best_effort"
       i_qos_durability: "volatile"
-      i_qos_history_depth: 5
+      i_qos_history_depth: 3
