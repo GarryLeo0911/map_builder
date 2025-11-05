@@ -1,0 +1,47 @@
+# RTAB-Map Configuration for Map Builder
+# This configuration is optimized for building maps from remote camera data
+
+rtabmap:
+  ros__parameters:
+    # Frame settings
+    frame_id: "oak_parent_frame"
+    odom_frame_id: "odom"
+    map_frame_id: "map"
+    
+    # Subscription settings
+    subscribe_rgb: true
+    subscribe_depth: true
+    subscribe_odom_info: false
+    approx_sync: true
+    
+    # Memory management
+    Mem/NotLinkedNodesKept: "false"
+    Mem/STMSize: "30"
+    Mem/IncrementalMemory: "true"
+    
+    # Detection and features
+    Rtabmap/DetectionRate: "1.0"
+    SURF/HessianThreshold: "150"
+    
+    # Optimization
+    RGBD/OptimizeFromGraphEnd: "false"
+    RGBD/NeighborLinkRefining: "true"
+    
+    # Visual odometry
+    Vis/EstimationType: "1"  # 0=None, 1=3DoF, 2=6DoF
+    Vis/MinInliers: "15"
+    
+    # Graph optimization
+    Optimizer/Strategy: "1"  # 0=TORO, 1=g2o, 2=GTSAM
+    
+    # Loop closure detection
+    Kp/MaxFeatures: "400"
+    Kp/DetectorStrategy: "0"  # 0=SURF, 1=SIFT, 2=ORB, 3=FAST/FREAK, 4=FAST/BRIEF, 5=GFTT/FREAK, 6=GFTT/BRIEF, 7=BRISK, 8=GFTT/ORB, 9=KAZE, 10=ORB-OCTREE, 11=SuperPoint, 12=SURF/FREAK, 13=GFTT/DAISY, 14=SURF/DAISY, 15=SIFT/FREAK, 16=SIFT/BRIEF, 17=SIFT/DAISY
+    
+    # Database
+    Db/TargetVersion: "0.21.4"
+    
+    # Quality settings for OAK-D cameras
+    RGBD/CreateOccupancyGrid: "true"
+    RGBD/LinearUpdate: "0.1"
+    RGBD/AngularUpdate: "0.1"

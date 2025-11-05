@@ -1,0 +1,96 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+)
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import LoadComposableNodes, Node
+from launch_ros.descriptions import ComposableNode
+
+
+def launch_setup(context, *args, **kwargs):
+    name = LaunchConfiguration("name").perform(context)
+    depthai_prefix = get_package_share_directory("oakd_driver")
+
+    params_file = LaunchConfiguration("params_file")
+    
+    parameters = [
+        {
+            "frame_id": name,
+            "subscribe_rgb": True,
+            "subscribe_depth": True,
+            "subscribe_odom_info": True,
+            "approx_sync": True,
+            "approx_sync_max_interval": 0.2,  # 200ms tolerance for wireless
+            "Rtabmap/DetectionRate": "2.0",  # Reduced detection rate for wireless
+            # QoS settings to match camera publisher (best_effort)
+            "qos_image": 1,  # 1 = BEST_EFFORT, 0 = RELIABLE
+            "qos_camera_info": 1,
+            "qos_image_history": 2,  # Match camera history depth
+            "qos_camera_info_history": 2,  # Match camera history depth
+            # Larger queue sizes for 5fps and wireless with history_depth=2
+            "topic_queue_size": 20,
+            "sync_queue_size": 20,
+        }
+    ]
+    
+    remappings = [
+        ("rgb/image", name + "/rgb/image_rect"),
+        ("rgb/camera_info", name + "/rgb/camera_info"),
+        ("depth/image", name + "/stereo/image_raw"),
+    ]
+
+    return [
+        LoadComposableNodes(
+            target_container=name + "_container",
+            composable_node_descriptions=[
+                ComposableNode(
+                    package="rtabmap_odom",
+                    plugin="rtabmap_odom::RGBDOdometry",
+                    name="rgbd_odometry",
+                    parameters=parameters,
+                    remappings=remappings,
+                ),
+            ],
+        ),
+        LoadComposableNodes(
+            target_container=name + "_container",
+            composable_node_descriptions=[
+                ComposableNode(
+                    package="rtabmap_slam",
+                    plugin="rtabmap_slam::CoreWrapper",
+                    name="rtabmap",
+                    parameters=parameters,
+                    remappings=remappings,
+                ),
+            ],
+        ),
+        Node(
+            package="rtabmap_viz",
+            executable="rtabmap_viz",
+            output="screen",
+            parameters=parameters,
+            remappings=remappings,
+        ),
+    ]
+
+
+def generate_launch_description():
+    depthai_prefix = get_package_share_directory("oakd_driver")
+    declared_arguments = [
+        DeclareLaunchArgument("name", default_value="oak"),
+        DeclareLaunchArgument(
+            "params_file",
+            default_value=os.path.join(depthai_prefix, "config", "rgbd.yaml"),
+        ),
+    ]
+
+    return LaunchDescription(
+        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    )
