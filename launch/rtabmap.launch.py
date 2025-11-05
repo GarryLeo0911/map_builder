@@ -27,16 +27,16 @@ def launch_setup(context, *args, **kwargs):
             "subscribe_depth": True,
             "subscribe_odom_info": True,
             "approx_sync": True,
-            "approx_sync_max_interval": 0.1,  # 100ms tolerance for wireless
-            "Rtabmap/DetectionRate": "3.5",
+            "approx_sync_max_interval": 0.2,  # 200ms tolerance for wireless
+            "Rtabmap/DetectionRate": "2.0",  # Reduced detection rate for wireless
             # QoS settings to match camera publisher (best_effort)
             "qos_image": 1,  # 1 = BEST_EFFORT, 0 = RELIABLE
             "qos_camera_info": 1,
             "qos_image_history": 2,  # Match camera history depth
             "qos_camera_info_history": 2,  # Match camera history depth
-            # Queue sizes for 15fps and wireless with history_depth=2
-            "topic_queue_size": 10,
-            "sync_queue_size": 10,
+            # Larger queue sizes for 5fps and wireless with history_depth=2
+            "topic_queue_size": 20,
+            "sync_queue_size": 20,
         }
     ]
     
