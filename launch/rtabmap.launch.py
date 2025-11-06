@@ -32,9 +32,9 @@ def launch_setup(context, *args, **kwargs):
             # QoS settings to match camera publisher (best_effort)
             "qos_image": 1,  # 1 = BEST_EFFORT, 0 = RELIABLE
             "qos_camera_info": 1,
-            "qos_image_history": 2,  # Match camera history depth
-            "qos_camera_info_history": 2,  # Match camera history depth
-            # Larger queue sizes for 5fps and wireless with history_depth=2
+            "qos_image_history": 4,  # Match camera history depth
+            "qos_camera_info_history": 4,  # Match camera history depth
+            # Larger queue sizes for 5fps and wireless with history_depth=4
             "topic_queue_size": 20,
             "sync_queue_size": 20,
         }
