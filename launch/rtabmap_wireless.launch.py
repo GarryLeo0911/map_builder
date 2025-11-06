@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
             # QoS settings for wireless communication
             "qos_reliability": "best_effort",
             "qos_durability": "volatile",
-            "qos_history_depth": 5,
+            "qos_history_depth": 4,
         }
     ]
 
